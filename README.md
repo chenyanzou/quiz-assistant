@@ -1,6 +1,6 @@
 # 智能题库刷题助手 (C++ 版)
 
-基于 **C++17 + cpp-httplib + SQLite3** 的智能刷题系统。编译为一个可执行文件 + 一个 HTML 文件，零 Python 依赖。
+基于 **c17 cpp-httplib SQLite3** 的智能刷题系统。编译为一个可执行文件 + 一个 HTML 文件。
 
 ## 功能
 
@@ -9,17 +9,17 @@
 - 📝 **错题本** — 自动收集、标记复习、错题统计
 - 🤖 **AI 智能助手** — 题目解析 / 举一反三 / AI 出题（支持 OpenAI、Kimi、DeepSeek、通义千问、智谱GLM、Ollama）
 - 📊 **学习统计** — 正确率趋势、刷题历史
-- 🌐 **单文件前端** — Bootstrap 5 + Chart.js，响应式设计
+- 🌐 **单文件前端** — Bootstrap 5   Chart.js，响应式设计
 
 ## 技术栈
 
 | 层级 | 技术 |
 |------|------|
-| 后端 | C++17, cpp-httplib 0.34, SQLite3 |
+| c17, pcp -httplib 0.34, SQLite3 |
 | AI 调用 | libcurl (OpenAI 兼容 API) |
-| JSON | nlohmann/json |
+| JSON | nlohmann/ JSON |
 | 前端 | Bootstrap 5, Chart.js, 原生 JS |
-| 构建 | g++ / MinGW |
+| 构建 | g   / MinGW |
 
 ## 快速开始
 
@@ -41,7 +41,7 @@ g++ -std=c++17 -O2 build/database.o build/ai_service.o build/quiz_server.o \
 
 ### 运行
 
-```bash
+”“bash
 ./quiz_server.exe          # 默认端口 8080
 ./quiz_server.exe 3000     # 自定义端口
 ```
@@ -65,8 +65,8 @@ g++ -std=c++17 -O2 build/database.o build/ai_service.o build/quiz_server.o \
 ├── CMakeLists.txt        # 构建配置
 ├── lib/                  # 第三方库 (header-only)
 │   ├── httplib.h        # cpp-httplib
-│   ├── json.hpp         # nlohmann/json
-│   ├── sqlite3.h/c      # SQLite3 amalgamation
+《中华人民共和国中华人民共和国宪法》
+│├──SQLite3 .h/ c# SQLite3合并
 │   ├── libcurl.dll.a    # libcurl 导入库
 │   └── curl/            # libcurl 头文件
 ├── data/
@@ -98,4 +98,4 @@ g++ -std=c++17 -O2 build/database.o build/ai_service.o build/quiz_server.o \
 
 ## 许可证
 
-MIT License
+与条款
