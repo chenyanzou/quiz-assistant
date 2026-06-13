@@ -253,7 +253,6 @@ body {
 <!-- TAB 2: Question Bank             -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-bank">
-    <!-- Filters -->
     <div class="row g-2 mb-3 align-items-end">
         <div class="col-md-3"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="bankFilterCat"><option value="">全部分类</option></select></div>
         <div class="col-md-2"><label class="form-label small">题型</label><select class="form-select form-select-sm" id="bankFilterType"><option value="">全部题型</option><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
@@ -262,13 +261,11 @@ body {
         <div class="col-md-2"><button class="btn btn-sm btn-success w-100" onclick="openQuestionModal()">+ 添加题目</button></div>
     </div>
 
-    <!-- Pagination info -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <small class="text-muted" id="bankPaginationInfo"></small>
         <div class="btn-group btn-group-sm" id="bankPagination"></div>
     </div>
 
-    <!-- Table -->
     <div class="table-container">
         <table class="table table-custom">
             <thead><tr><th style="width:60px">ID</th><th style="width:100px">分类</th><th style="width:70px">题型</th><th>题目内容</th><th style="width:70px">难度</th><th style="width:160px">操作</th></tr></thead>
@@ -318,7 +315,6 @@ body {
 <!-- TAB 4: Quiz                      -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-quiz">
-    <!-- Quiz Setup -->
     <div id="quizSetup">
         <div class="quiz-card fade-in">
             <h5 class="section-title">刷题设置</h5>
@@ -344,7 +340,6 @@ body {
         </div>
     </div>
 
-    <!-- Quiz Active -->
     <div id="quizActive" style="display:none;">
         <div class="quiz-card fade-in">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -357,7 +352,6 @@ body {
         </div>
     </div>
 
-    <!-- Quiz Summary -->
     <div id="quizSummary" style="display:none;">
         <div class="quiz-card fade-in text-center">
             <div style="font-size:4rem;" id="quizSummaryEmoji">&#x1F389;</div>
@@ -399,7 +393,6 @@ body {
 <!-- TAB 6: AI Assistant              -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-ai">
-    <!-- AI Sub-tabs -->
     <ul class="nav nav-pills mb-3" id="aiSubTabs">
         <li class="nav-item"><button class="nav-link active" data-ai-sub="config" onclick="switchAiSub('config')">AI配置</button></li>
         <li class="nav-item"><button class="nav-link" data-ai-sub="analyze" onclick="switchAiSub('analyze')">AI解析</button></li>
@@ -578,19 +571,100 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // ============================================================
-// API Client
+// Embedded Sample Questions (80 questions)
 // ============================================================
-const API_BASE = '';
-async function api(path, options = {}) {
-    const res = await fetch(API_BASE + path, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-        ...options
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({error: res.statusText}));
-        throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return res.json();
+const SAMPLE_QUESTIONS = [
+  {"question_type":"single","content":"中国共产党成立于哪一年？","options":["1919年","1920年","1921年","1922年"],"answer":"C","analysis":"中国共产党于1921年7月23日在上海召开第一次全国代表大会，标志着中国共产党的正式成立。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的根本宗旨是什么？","options":["实现共产主义","全心全意为人民服务","建设社会主义现代化强国","发展社会主义民主政治"],"answer":"B","analysis":"全心全意为人民服务是中国共产党的根本宗旨，是党的一切工作的出发点和落脚点。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党以什么作为自己的行动指南？","options":["马克思列宁主义","毛泽东思想","中国特色社会主义理论体系","马克思列宁主义、毛泽东思想、邓小平理论、\"三个代表\"重要思想、科学发展观、习近平新时代中国特色社会主义思想"],"answer":"D","analysis":"党章明确规定，中国共产党以马克思列宁主义、毛泽东思想、邓小平理论、\"三个代表\"重要思想、科学发展观、习近平新时代中国特色社会主义思想作为自己的行动指南。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党在社会主义初级阶段的基本路线是什么？","options":["以经济建设为中心","坚持四项基本原则，坚持改革开放","领导和团结全国各族人民，以经济建设为中心，坚持四项基本原则，坚持改革开放，自力更生，艰苦创业，为把我国建设成为富强民主文明和谐美丽的社会主义现代化强国而奋斗","解放和发展社会生产力"],"answer":"C","analysis":"这是党章规定的党在社会主义初级阶段的基本路线的完整表述。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"四项基本原则的核心是什么？","options":["坚持社会主义道路","坚持人民民主专政","坚持中国共产党的领导","坚持马克思列宁主义毛泽东思想"],"answer":"C","analysis":"四项基本原则的核心是坚持中国共产党的领导。党的领导是中国特色社会主义最本质的特征。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党员的党龄从何时算起？","options":["递交入党申请书之日","确定为入党积极分子之日","支部大会通过其为预备党员之日","预备期满转为正式党员之日"],"answer":"D","analysis":"党章规定，党员的党龄从预备期满转为正式党员之日算起。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"预备党员的预备期为多长时间？","options":["三个月","六个月","一年","两年"],"answer":"C","analysis":"党章规定，预备党员的预备期为一年。党组织对预备党员应当认真教育和考察。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党党徽由什么组成？","options":["镰刀和锤头","五星和麦穗","镰刀和斧头","天安门和齿轮"],"answer":"A","analysis":"中国共产党党徽为镰刀和锤头组成的图案，象征着工人阶级和农民阶级的联盟。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的最高领导机关是什么？","options":["中央政治局","中央委员会","党的全国代表大会和它所产生的中央委员会","中央政治局常务委员会"],"answer":"C","analysis":"党章规定，党的最高领导机关，是党的全国代表大会和它所产生的中央委员会。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的全国代表大会每几年举行一次？","options":["三年","四年","五年","六年"],"answer":"C","analysis":"党章规定，党的全国代表大会每五年举行一次，由中央委员会召集。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的组织原则是什么？","options":["民主集中制","集体领导制","少数服从多数","下级服从上级"],"answer":"A","analysis":"民主集中制是党的根本组织原则和领导制度，是民主基础上的集中和集中指导下的民主相结合。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的最高理想和最终目标是什么？","options":["建设社会主义现代化强国","实现中华民族伟大复兴","实现共产主义","全面建成小康社会"],"answer":"C","analysis":"党章明确指出，党的最高理想和最终目标是实现共产主义。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党是中国工人阶级的先锋队，同时是中国人民和什么的先锋队？","options":["中国社会","中华民族","中国各民族","中国公民"],"answer":"B","analysis":"党章规定，中国共产党是中国工人阶级的先锋队，同时是中国人民和中华民族的先锋队。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"发展党员必须经过党的支部，坚持什么原则？","options":["个别吸收","集体吸收","分批吸收","统一吸收"],"answer":"A","analysis":"党章规定，发展党员必须经过党的支部，坚持个别吸收的原则。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党员如果没有正当理由，连续多长时间不参加党的组织生活，或不交纳党费，或不做党所分配的工作，就被认为是自行脱党？","options":["三个月","六个月","一年","两年"],"answer":"B","analysis":"党章规定，党员如果没有正当理由，连续六个月不参加党的组织生活，或不交纳党费，或不做党所分配的工作，就被认为是自行脱党。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"留党察看最长不超过多长时间？","options":["六个月","一年","两年","三年"],"answer":"C","analysis":"党章规定，留党察看最长不超过两年。党员在留党察看期间没有表决权、选举权和被选举权。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的纪律处分有哪几种？","options":["警告、严重警告、撤销党内职务、留党察看、开除党籍","警告、记过、记大过、降级、撤职","批评教育、警告、严重警告、撤销职务、开除","警告、记过、撤职、留党察看、开除党籍"],"answer":"A","analysis":"党章规定，党的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"什么是党的生命？","options":["党的团结统一","党内民主","党的纪律","党的路线"],"answer":"B","analysis":"党内民主是党的生命，是保持党的生机活力的重要保证。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"申请加入中国共产党，年满多少周岁的中国工人、农民、军人、知识分子和其他社会阶层的先进分子可以提出申请？","options":["十六周岁","十八周岁","二十周岁","二十二周岁"],"answer":"B","analysis":"党章规定，年满十八岁的中国工人、农民、军人、知识分子和其他社会阶层的先进分子，承认党的纲领和章程，愿意参加党的一个组织并在其中积极工作、执行党的决议和按期交纳党费的，可以申请加入中国共产党。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的三大作风是什么？","options":["理论联系实际、密切联系群众、艰苦奋斗","理论联系实际、密切联系群众、批评与自我批评","实事求是、群众路线、独立自主","解放思想、实事求是、与时俱进"],"answer":"B","analysis":"理论联系实际、密切联系群众、批评与自我批评是党的三大优良作风，是毛泽东在党的七大上概括的。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"三会一课\"制度中的\"三会\"不包括什么？","options":["支部党员大会","支部委员会","党小组会","民主生活会"],"answer":"D","analysis":"\"三会一课\"中的\"三会\"指支部党员大会、支部委员会和党小组会，\"一课\"指按时上好党课。民主生活会不属于\"三会一课\"。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的根本大法是什么？","options":["《中国共产党纪律处分条例》","《中国共产党章程》","《中国共产党廉洁自律准则》","《关于新形势下党内政治生活的若干准则》"],"answer":"B","analysis":"《中国共产党章程》是党的根本大法，是全党必须共同遵守的根本行为规范。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党成立的具体时间是？","options":["1919年5月4日","1921年7月1日","1921年7月23日","1921年8月1日"],"answer":"C","analysis":"中国共产党第一次全国代表大会于1921年7月23日在上海开幕，标志着中国共产党正式成立。后来将7月1日定为建党纪念日。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"遵义会议是哪一年召开的？","options":["1933年","1934年","1935年","1936年"],"answer":"C","analysis":"遵义会议于1935年1月在贵州遵义召开，是党的历史上一个生死攸关的转折点，确立了毛泽东在党和红军中的领导地位。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中华人民共和国成立的时间是？","options":["1945年10月1日","1949年9月21日","1949年10月1日","1950年10月1日"],"answer":"C","analysis":"1949年10月1日，毛泽东在天安门城楼庄严宣告中华人民共和国中央人民政府成立。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的十一届三中全会是在哪一年召开的？","options":["1976年","1977年","1978年","1979年"],"answer":"C","analysis":"1978年12月召开的党的十一届三中全会，作出了实行改革开放的历史性决策，是新中国成立以来党的历史上具有深远意义的伟大转折。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国梦的基本内涵是什么？","options":["国家富强","民族振兴","人民幸福","国家富强、民族振兴、人民幸福"],"answer":"D","analysis":"中国梦的基本内涵是实现国家富强、民族振兴、人民幸福。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"四个全面\"战略布局不包括下列哪一项？","options":["全面建成社会主义现代化强国","全面深化改革","全面依法治国","全面改革开放"],"answer":"D","analysis":"\"四个全面\"战略布局是：全面建成社会主义现代化强国、全面深化改革、全面依法治国、全面从严治党。\"全面改革开放\"不在其中。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"四个意识\"是指什么？","options":["政治意识、大局意识、核心意识、看齐意识","政治意识、责任意识、核心意识、看齐意识","政治意识、大局意识、担当意识、看齐意识","政治意识、大局意识、核心意识、服务意识"],"answer":"A","analysis":"\"四个意识\"是指政治意识、大局意识、核心意识、看齐意识，必须增强\"四个意识\"、坚定\"四个自信\"、做到\"两个维护\"。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国特色社会主义最本质的特征是什么？","options":["人民当家作主","中国共产党领导","依法治国","公有制为主体"],"answer":"B","analysis":"中国共产党领导是中国特色社会主义最本质的特征，是中国特色社会主义制度的最大优势。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的思想路线是什么？","options":["实事求是","一切从实际出发，理论联系实际，实事求是，在实践中检验真理和发展真理","解放思想，实事求是","与时俱进，求真务实"],"answer":"B","analysis":"党的思想路线是一切从实际出发，理论联系实际，实事求是，在实践中检验真理和发展真理。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的最大政治优势是什么？","options":["理论优势","组织优势","密切联系群众","制度优势"],"answer":"C","analysis":"密切联系群众是党的最大政治优势，脱离群众是党执政后的最大危险。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党第一次全国代表大会最初在哪里召开？","options":["北京","广州","上海","武汉"],"answer":"C","analysis":"中国共产党第一次全国代表大会于1921年7月23日在上海法租界望志路106号（今兴业路76号）开幕，后转移到浙江嘉兴南湖的游船上继续举行。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"南昌起义的时间是？","options":["1927年4月12日","1927年8月1日","1927年9月9日","1927年10月1日"],"answer":"B","analysis":"1927年8月1日，南昌起义打响了武装反抗国民党反动派的第一枪，标志着中国共产党独立领导革命战争、创建人民军队和武装夺取政权的开始。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"毛泽东思想在哪一次会议上被确立为党的指导思想？","options":["遵义会议","党的六届六中全会","党的七大","党的八大"],"answer":"C","analysis":"1945年召开的党的七大，将毛泽东思想确立为党的指导思想并写入党章。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"邓小平理论在哪一次会议上被确立为党的指导思想？","options":["党的十四大","党的十五大","党的十六大","党的十七大"],"answer":"B","analysis":"1997年召开的党的十五大，将邓小平理论确立为党的指导思想并写入党章。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"三个代表\"重要思想是哪一年提出的？","options":["1997年","1999年","2000年","2002年"],"answer":"C","analysis":"2000年2月，江泽民在广东考察工作时首次提出\"三个代表\"重要思想。2002年党的十六大将其确立为党的指导思想。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"科学发展观的核心是什么？","options":["发展","以人为本","全面协调可持续","统筹兼顾"],"answer":"B","analysis":"科学发展观的第一要义是发展，核心是以人为本，基本要求是全面协调可持续，根本方法是统筹兼顾。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国特色社会主义进入新时代的标志是哪个重大政治论断？","options":["党的十八大的召开","党的十九大的召开","社会主要矛盾的变化","全面建成小康社会的实现"],"answer":"B","analysis":"党的十九大（2017年）作出\"中国特色社会主义进入新时代\"的重大政治论断，确立了习近平新时代中国特色社会主义思想为党的指导思想。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"现阶段我国社会的主要矛盾是什么？","options":["人民日益增长的物质文化需要同落后的社会生产之间的矛盾","人民日益增长的美好生活需要和不平衡不充分的发展之间的矛盾","经济发展与环境保护之间的矛盾","城乡发展不平衡的矛盾"],"answer":"B","analysis":"党的十九大提出，我国社会主要矛盾已经转化为人民日益增长的美好生活需要和不平衡不充分的发展之间的矛盾。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的群众路线的基本内容是什么？","options":["一切为了群众，一切依靠群众","从群众中来，到群众中去","一切为了群众，一切依靠群众，从群众中来，到群众中去","密切联系群众，服务群众"],"answer":"C","analysis":"群众路线是党的根本工作路线，其基本内容是：一切为了群众，一切依靠群众，从群众中来，到群众中去。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"入党誓词中\"为共产主义奋斗终身，随时准备为党和人民牺牲一切\"的下句是？","options":["永不叛党","永不背叛","对党忠诚","全心全意为人民服务"],"answer":"A","analysis":"入党誓词全文：我志愿加入中国共产党，拥护党的纲领，遵守党的章程，履行党员义务，执行党的决定，严守党的纪律，保守党的秘密，对党忠诚，积极工作，为共产主义奋斗终身，随时准备为党和人民牺牲一切，永不叛党。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"两个\"维护\"的具体内容是什么？","options":["坚决维护党中央权威和党的团结统一","坚决维护习近平总书记党中央的核心、全党的核心地位，坚决维护党中央权威和集中统一领导","坚决维护党的纪律和党的规矩","坚决维护党的团结和国家的统一"],"answer":"B","analysis":"两个\"维护\"：坚决维护习近平总书记党中央的核心、全党的核心地位，坚决维护党中央权威和集中统一领导。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"以下哪项不属于党员的义务？","options":["认真学习党的理论","贯彻执行党的基本路线","对党的工作提出建议和倡议","行使表决权、选举权，有被选举权"],"answer":"D","analysis":"行使表决权、选举权和被选举权属于党员的权利，而非义务。党章规定了党员的八项义务和八项权利。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的三大历史任务是什么？","options":["推进现代化建设、完成祖国统一、维护世界和平与促进共同发展","建设小康社会、推进改革、促进发展","经济发展、政治稳定、文化繁荣","工业化、信息化、城镇化"],"answer":"A","analysis":"党章指出，我国社会主义建设的根本任务是进一步解放生产力，发展生产力，逐步实现社会主义现代化，并为此而改革生产关系和上层建筑中不适应生产力发展的方面和环节。党的三大历史任务是：推进现代化建设、完成祖国统一、维护世界和平与促进共同发展。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"入党积极分子经过多长时间的培养教育和考察，才能列为发展对象？","options":["三个月以上","半年以上","一年以上","两年以上"],"answer":"C","analysis":"《中国共产党发展党员工作细则》规定，入党积极分子经过一年以上培养教育和考察，基本具备党员条件的，才能列为发展对象。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的民主集中制的基本原则中，\"四个服从\"不包括什么？","options":["个人服从组织","少数服从多数","党员服从干部","全党各个组织和全体党员服从党的全国代表大会和中央委员会"],"answer":"C","analysis":"\"四个服从\"包括：党员个人服从党的组织、少数服从多数、下级组织服从上级组织、全党各个组织和全体党员服从党的全国代表大会和中央委员会。\"党员服从干部\"不在其中。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党领导的第一次工人运动高潮的起点是什么？","options":["京汉铁路大罢工","香港海员大罢工","安源路矿工人大罢工","省港大罢工"],"answer":"B","analysis":"1922年1月爆发的香港海员大罢工，是中国共产党领导的第一次工人运动高潮的起点。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"长征途中召开的哪次会议是党的历史上一个生死攸关的转折点？","options":["遵义会议","瓦窑堡会议","洛川会议","延安会议"],"answer":"A","analysis":"1935年1月召开的遵义会议，结束了\"左\"倾教条主义在中央的统治，确立了毛泽东在党和红军中的领导地位，在极端危急的历史关头挽救了党，挽救了红军，挽救了中国革命。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"抗日战争全面爆发的标志性事件是什么？","options":["九一八事变","华北事变","卢沟桥事变","西安事变"],"answer":"C","analysis":"1937年7月7日的卢沟桥事变（七七事变），标志着日本帝国主义全面侵华战争的开始，也是中华民族进行全面抗战的起点。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的七届二中全会提出的\"两个务必\"是什么？","options":["务必保持谦虚谨慎、不骄不躁的作风，务必保持艰苦奋斗的作风","务必保持党的先进性，务必保持党的纯洁性","务必坚持实事求是，务必坚持群众路线","务必保持革命精神，务必保持团结统一"],"answer":"A","analysis":"1949年3月召开的七届二中全会，毛泽东提出\"务必使同志们继续地保持谦虚、谨慎、不骄、不躁的作风，务必使同志们继续地保持艰苦奋斗的作风\"。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的基本路线的核心内容是什么？","options":["一个中心，两个基本点","坚持党的领导","坚持改革开放","坚持四项基本原则"],"answer":"A","analysis":"党在社会主义初级阶段基本路线的核心内容是一个中心（以经济建设为中心）、两个基本点（坚持四项基本原则，坚持改革开放）。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"五个必由之路\"是哪一年提出的？","options":["2017年","2020年","2021年","2022年"],"answer":"D","analysis":"2022年3月，习近平总书记在参加十三届全国人大五次会议内蒙古代表团审议时首次提出\"五个必由之路\"。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"什么是党的根本性建设？","options":["思想建设","组织建设","政治建设","作风建设"],"answer":"C","analysis":"党的十九大提出，党的政治建设是党的根本性建设，决定党的建设方向和效果。要把党的政治建设摆在首位。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的最大危险是什么？","options":["腐败问题","脱离群众","官僚主义","形式主义"],"answer":"B","analysis":"党章指出，我们党的最大政治优势是密切联系群众，党执政后的最大危险是脱离群众。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的哪次会议确立了习近平新时代中国特色社会主义思想为党的指导思想？","options":["党的十八大","党的十八届六中全会","党的十九大","党的十九届六中全会"],"answer":"C","analysis":"2017年10月召开的党的十九大，将习近平新时代中国特色社会主义思想确立为党的指导思想并写入党章。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"以下哪项是党员的纪律处分？","options":["诫勉谈话","通报批评","留党察看","停职检查"],"answer":"C","analysis":"党章规定的纪律处分有五种：警告、严重警告、撤销党内职务、留党察看、开除党籍。诫勉谈话、通报批评和停职检查不属于纪律处分种类。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"申请入党的人，要填写入党志愿书，要有几名正式党员作介绍人？","options":["一名","两名","三名","不需要"],"answer":"B","analysis":"党章规定，申请入党的人，要填写入党志愿书，要有两名正式党员作介绍人。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"预备党员预备期满，需要继续考察和教育的，可以延长预备期，但最长不能超过多长时间？","options":["三个月","六个月","一年","两年"],"answer":"C","analysis":"党章规定，预备党员预备期满，需要继续考察和教育的，可以延长预备期，但不能超过一年。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中华人民共和国的国旗五星红旗，大五角星代表什么？","options":["工人阶级","中国共产党","全国人民","各民主党派"],"answer":"B","analysis":"国旗中的大五角星代表中国共产党，四颗小五角星代表工人阶级、农民阶级、城市小资产阶级和民族资产阶级。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"全面深化改革的总目标是什么？","options":["全面建成小康社会","完善和发展中国特色社会主义制度，推进国家治理体系和治理能力现代化","实现中华民族伟大复兴","建设社会主义现代化国家"],"answer":"B","analysis":"党的十八届三中全会提出，全面深化改革的总目标是完善和发展中国特色社会主义制度，推进国家治理体系和治理能力现代化。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"三严三实\"中的\"三实\"不包括什么？","options":["谋事要实","创业要实","做人要实","工作要实"],"answer":"D","analysis":"\"三严三实\"：严以修身、严以用权、严以律己；谋事要实、创业要实、做人要实。\"工作要实\"不在其中。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"抗美援朝战争是哪一年开始的？","options":["1949年","1950年","1951年","1952年"],"answer":"B","analysis":"1950年10月，中国人民志愿军赴朝作战，开始了伟大的抗美援朝战争。1953年7月签订《朝鲜停战协定》。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党独立领导革命战争、创建人民军队的开端是什么？","options":["南昌起义","秋收起义","广州起义","百色起义"],"answer":"A","analysis":"1927年8月1日南昌起义，打响了武装反抗国民党反动派的第一枪，标志着中国共产党独立领导革命战争、创建人民军队和武装夺取政权的开始。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的执政理念是什么？","options":["立党为公、执政为民","为人民服务","以人民为中心","全心全意为人民服务"],"answer":"A","analysis":"立党为公、执政为民是中国共产党的执政理念。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"一国两制\"方针最初是为解决什么问题而提出的？","options":["香港问题","澳门问题","台湾问题","西藏问题"],"answer":"C","analysis":"\"一国两制\"方针是邓小平为解决台湾问题、实现祖国和平统一而提出的伟大构想，后来首先成功运用于解决香港和澳门问题。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"什么是中国特色社会主义的本质要求和重要保障？","options":["全面深化改革","全面依法治国","全面从严治党","全面建成小康社会"],"answer":"B","analysis":"党的十九大提出，全面依法治国是中国特色社会主义的本质要求和重要保障。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的基层组织是党在社会基层组织中的战斗堡垒，是党的全部工作和什么的基础？","options":["生命力","创造力","战斗力","凝聚力"],"answer":"C","analysis":"党章规定，党的基层组织是党在社会基层组织中的战斗堡垒，是党的全部工作和战斗力的基础。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党员在什么情况下被认为是自行脱党？","options":["不参加党的组织生活","不交纳党费","不做党分配的工作","没有正当理由，连续六个月不参加党的组织生活，或不交纳党费，或不做党所分配的工作"],"answer":"D","analysis":"党章规定，党员如果没有正当理由，连续六个月不参加党的组织生活，或不交纳党费，或不做党所分配的工作，就被认为是自行脱党。支部大会应当决定把这样的党员除名，并报上级党组织批准。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"两学一做\"学习教育中的\"两学\"指什么？","options":["学党章党规、学系列讲话","学理论、学实践","学党史、学国史","学法律、学政策"],"answer":"A","analysis":"\"两学一做\"：学党章党规、学系列讲话，做合格党员。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的性质是什么？","options":["中国工人阶级的先锋队","中国人民和中华民族的先锋队","中国特色社会主义事业的领导核心","中国工人阶级的先锋队，同时是中国人民和中华民族的先锋队，是中国特色社会主义事业的领导核心"],"answer":"D","analysis":"党章规定：中国共产党是中国工人阶级的先锋队，同时是中国人民和中华民族的先锋队，是中国特色社会主义事业的领导核心，代表中国先进生产力的发展要求，代表中国先进文化的前进方向，代表中国最广大人民的根本利益。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的纪律中最首要、最核心的是什么纪律？","options":["组织纪律","政治纪律","廉洁纪律","工作纪律"],"answer":"B","analysis":"政治纪律是党最首要、最核心的纪律，是各级党组织和全体党员在政治方向、政治立场、政治言论、政治行为方面必须遵守的规矩。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"四个自信\"不包括以下哪一项？","options":["道路自信","理论自信","制度自信","经济自信"],"answer":"D","analysis":"\"四个自信\"是指中国特色社会主义道路自信、理论自信、制度自信、文化自信。\"经济自信\"不在其中。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"入党介绍人的主要职责是什么？","options":["只是介绍入党","负责培养教育","认真了解申请人的情况，向其解释党的纲领和章程，向党组织作出负责的报告","只是推荐"],"answer":"C","analysis":"入党介绍人要认真了解申请人的思想、品质、经历和工作表现，向他解释党的纲领和党的章程，说明党员的条件、义务和权利，并向党组织作出负责的报告。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"\"五位一体\"总体布局是指什么？","options":["经济建设、政治建设、文化建设、社会建设、生态文明建设","工业、农业、国防、科技、教育","东部、西部、中部、东北、沿海","党的领导、人民当家作主、依法治国、以德治国、从严治党"],"answer":"A","analysis":"\"五位一体\"总体布局是指经济建设、政治建设、文化建设、社会建设、生态文明建设五位一体，全面推进。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"以下哪项不属于党的六大纪律？","options":["政治纪律、组织纪律","廉洁纪律、群众纪律","工作纪律、生活纪律","经济纪律、保密纪律"],"answer":"D","analysis":"党的六大纪律包括：政治纪律、组织纪律、廉洁纪律、群众纪律、工作纪律、生活纪律。经济纪律和保密纪律不属于六大纪律的独立分类。","difficulty":3,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"入党积极分子应该怎么写思想汇报？","options":["只需口述即可","应向党组织定期提交书面思想汇报","只需年终总结即可","不需要提交"],"answer":"B","analysis":"入党积极分子应定期向党组织提交书面思想汇报，一般每季度至少一次，如实汇报自己的思想、学习、工作和生活情况。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"中国共产党的象征和标志是什么？","options":["党徽","党旗","党徽和党旗","党章"],"answer":"C","analysis":"党章规定，中国共产党的党徽党旗是中国共产党的象征和标志。","difficulty":1,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"党的十九大提出的\"两步走\"战略安排，到本世纪中叶的目标是什么？","options":["全面建成小康社会","基本实现社会主义现代化","把我国建成富强民主文明和谐美丽的社会主义现代化强国","实现中华民族的伟大复兴"],"answer":"C","analysis":"党的十九大提出：第一个阶段，从2020年到2035年，基本实现社会主义现代化；第二个阶段，从2035年到本世纪中叶，把我国建成富强民主文明和谐美丽的社会主义现代化强国。","difficulty":2,"source":"入党积极分子真题"},
+  {"question_type":"single","content":"新发展理念的核心内容是什么？","options":["创新、协调、绿色、开放、共享","改革、发展、稳定、和谐、共赢","科技、教育、人才、创新、发展","质量、效率、动力、公平、可持续"],"answer":"A","analysis":"新发展理念即创新、协调、绿色、开放、共享的发展理念，是习近平新时代中国特色社会主义思想的重要内容。","difficulty":2,"source":"入党积极分子真题"}
+];
+
+// ============================================================
+// localStorage Helpers
+// ============================================================
+function lsGet(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+}
+function lsSet(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
 }
 
 // ============================================================
@@ -612,16 +686,17 @@ const MODE_LABELS = { sequential: '顺序刷题', random: '随机刷题', exam: 
 // ============================================================
 // Utilities
 // ============================================================
-function showToast(msg, type = 'success') {
-    const bg = type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : 'bg-success';
-    const icon = type === 'error' ? '&#x2716;' : type === 'warning' ? '&#x26A0;' : '&#x2714;';
-    const id = 'toast-' + Date.now();
-    const html = `<div id="${id}" class="toast align-items-center text-white ${bg} border-0" role="alert"><div class="d-flex"><div class="toast-body">${icon} ${msg}</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+function showToast(msg, type) {
+    type = type || 'success';
+    var bg = type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : 'bg-success';
+    var icon = type === 'error' ? '&#x2716;' : type === 'warning' ? '&#x26A0;' : '&#x2714;';
+    var id = 'toast-' + Date.now();
+    var html = '<div id="' + id + '" class="toast align-items-center text-white ' + bg + ' border-0" role="alert"><div class="d-flex"><div class="toast-body">' + icon + ' ' + msg + '</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>';
     document.getElementById('toastContainer').insertAdjacentHTML('beforeend', html);
-    const el = document.getElementById(id);
-    const toast = new bootstrap.Toast(el, { delay: 3000 });
+    var el = document.getElementById(id);
+    var toast = new bootstrap.Toast(el, { delay: 3000 });
     toast.show();
-    el.addEventListener('hidden.bs.toast', () => el.remove());
+    el.addEventListener('hidden.bs.toast', function() { el.remove(); });
 }
 
 function showLoading(el) {
@@ -629,56 +704,59 @@ function showLoading(el) {
 }
 
 function showError(el, msg) {
-    el.innerHTML = `<div class="alert alert-danger m-0">${msg}</div>`;
+    el.innerHTML = '<div class="alert alert-danger m-0">' + msg + '</div>';
 }
 
 function showEmpty(el, msg) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4AD;</div><p>${msg}</p></div>`;
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4AD;</div><p>' + msg + '</p></div>';
 }
 
-async function confirmDialog(msg) {
+function confirmDialog(msg) {
     return confirm(msg);
 }
 
 function difficultyStars(n) {
-    let s = ''; for (let i=0; i<5; i++) s += i < n ? '★' : '☆'; return s;
+    var s = ''; for (var i=0; i<5; i++) s += i < n ? '★' : '☆'; return s;
 }
 
 function getTypeBadge(type) {
-    const colors = { single: 'primary', multi: 'info', judge: 'warning', fill: 'success', short: 'secondary' };
-    return `<span class="badge bg-${colors[type] || 'primary'} badge-type">${TYPE_LABELS[type] || type}</span>`;
+    var colors = { single: 'primary', multi: 'info', judge: 'warning', fill: 'success', short: 'secondary' };
+    return '<span class="badge bg-' + (colors[type] || 'primary') + ' badge-type">' + (TYPE_LABELS[type] || type) + '</span>';
 }
 
-function truncate(str, n=60) {
+function truncate(str, n) {
     if (!str) return '';
+    n = n || 60;
     return str.length > n ? str.substring(0, n) + '...' : str;
 }
 
-function parseOptions(text) {
-    if (!text || !text.trim()) return [];
-    // Try JSON parse first
-    try { const arr = JSON.parse(text); if (Array.isArray(arr)) return arr; } catch(e) {}
-    // Try line-based
-    return text.split('\n').map(s => s.trim()).filter(s => s);
-}
-
 function escapeHtml(str) {
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
+function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+}
+
 function parseAiQuestion(text, defaultType) {
-    const result = { content: '', options: [], answer: '', analysis: '', question_type: defaultType || 'single' };
+    var result = { content: '', options: [], answer: '', analysis: '', question_type: defaultType || 'single' };
     if (!text) return result;
-    const lines = text.split('\n').map(s => s.trim()).filter(s => s);
-    let section = '';
-    for (const line of lines) {
-        const lc = line.toLowerCase();
-        if (lc.startsWith('题干') || lc.startsWith('题目')) { section = 'content'; result.content = line.replace(/^(题干|题目)[：:]\s*/i, ''); continue; }
-        if (lc.startsWith('选项')) { section = 'options'; const rest = line.replace(/^选项[：:]\s*/i, ''); if (rest) result.options.push(rest); continue; }
-        if (lc.startsWith('答案')) { section = 'answer'; result.answer = line.replace(/^答案[：:]\s*/i, ''); continue; }
-        if (lc.startsWith('解析')) { section = 'analysis'; result.analysis = line.replace(/^解析[：:]\s*/i, ''); continue; }
+    var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+    var section = '';
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var lc = line.toLowerCase();
+        if (lc.indexOf('题干') === 0 || lc.indexOf('题目') === 0) { section = 'content'; result.content = line.replace(/^(题干|题目)[：:]\s*/i, ''); continue; }
+        if (lc.indexOf('选项') === 0) { section = 'options'; var rest = line.replace(/^选项[：:]\s*/i, ''); if (rest) result.options.push(rest); continue; }
+        if (lc.indexOf('答案') === 0) { section = 'answer'; result.answer = line.replace(/^答案[：:]\s*/i, ''); continue; }
+        if (lc.indexOf('解析') === 0) { section = 'analysis'; result.analysis = line.replace(/^解析[：:]\s*/i, ''); continue; }
         if (section === 'content') result.content += '\n' + line;
         else if (section === 'options') result.options.push(line);
         else if (section === 'answer') result.answer += '\n' + line;
@@ -688,23 +766,52 @@ function parseAiQuestion(text, defaultType) {
 }
 
 // ============================================================
+// AI Chat (direct fetch to external API)
+// ============================================================
+async function aiChat(systemPrompt, userMessage) {
+    var cfg = lsGet('quiz_ai_config', {});
+    if (!cfg.base_url) return 'AI服务未配置，请在AI设置中配置API密钥。';
+    var url = cfg.base_url.replace(/\/$/, '') + '/chat/completions';
+    var body = {
+        model: cfg.model || 'gpt-3.5-turbo',
+        messages: [
+            {role:'system', content:systemPrompt},
+            {role:'user', content:userMessage}
+        ],
+        temperature: 0.7,
+        max_tokens: 2048
+    };
+    try {
+        var res = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', 'Authorization':'Bearer '+cfg.api_key},
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) return 'AI服务错误 HTTP ' + res.status;
+        var data = await res.json();
+        return data.choices[0].message.content;
+    } catch(e) {
+        return 'AI服务网络错误: ' + e.message;
+    }
+}
+
+// ============================================================
 // Tab Navigation
 // ============================================================
-let currentTab = 'dashboard';
-document.querySelectorAll('#mainTabs [data-tab]').forEach(btn => {
+var currentTab = 'dashboard';
+document.querySelectorAll('#mainTabs [data-tab]').forEach(function(btn) {
     btn.addEventListener('click', function() {
         currentTab = this.dataset.tab;
-        // Update active states manually (Bootstrap handles the rest via data-bs-toggle)
         switchTab(currentTab);
     });
 });
 
 function switchTab(tab) {
     currentTab = tab;
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('show', 'active'); });
     document.getElementById('tab-' + tab).classList.add('show', 'active');
-    document.querySelectorAll('#mainTabs [data-tab]').forEach(b => b.classList.remove('active'));
-    const btn = document.querySelector(`#mainTabs [data-tab="${tab}"]`);
+    document.querySelectorAll('#mainTabs [data-tab]').forEach(function(b) { b.classList.remove('active'); });
+    var btn = document.querySelector('#mainTabs [data-tab="' + tab + '"]');
     if (btn) btn.classList.add('active');
 
     if (tab === 'dashboard') loadDashboard();
@@ -719,116 +826,100 @@ function switchTab(tab) {
 // ============================================================
 // Cached Data
 // ============================================================
-let categoriesCache = [];
+var categoriesCache = [];
 
-async function refreshCategories() {
-    try {
-        categoriesCache = await api('/api/categories');
-    } catch(e) {
-        categoriesCache = [];
-        showToast('加载分类失败: ' + e.message, 'error');
-    }
+function refreshCategories() {
+    categoriesCache = lsGet('quiz_categories', []);
 }
 
 function populateCategorySelect(selId, includeAll) {
-    const sel = document.getElementById(selId);
+    var sel = document.getElementById(selId);
     if (!sel) return;
-    let html = '';
+    var html = '';
     if (includeAll) html = '<option value="0">全部分类</option>';
     else html = '<option value="">请选择分类</option>';
-    for (const c of categoriesCache) {
-        html += `<option value="${c.id}">${c.name}</option>`;
+    for (var i = 0; i < categoriesCache.length; i++) {
+        var c = categoriesCache[i];
+        html += '<option value="' + c.id + '">' + c.name + '</option>';
     }
     sel.innerHTML = html;
+}
+
+function findCategoryById(id) {
+    for (var i = 0; i < categoriesCache.length; i++) {
+        if (categoriesCache[i].id === id) return categoriesCache[i];
+    }
+    return null;
 }
 
 // ============================================================
 // Tab 1: Dashboard
 // ============================================================
-async function loadDashboard() {
-    try {
-        await refreshCategories();
-        const [questionsRes, wrongRes, statsRes] = await Promise.all([
-            api('/api/questions?limit=0'),
-            api('/api/wrong'),
-            api('/api/stats')
-        ]);
+function loadDashboard() {
+    refreshCategories();
+    var questions = lsGet('quiz_questions', []);
+    var wrongs = lsGet('quiz_wrong', []);
+    var records = lsGet('quiz_records', []);
+    var categories = categoriesCache;
 
-        const totalQuestions = questionsRes.total || 0;
-        const wrongCount = wrongRes.total || 0;
-        const categories = categoriesCache;
+    var totalQuestions = questions.length;
+    var wrongCount = wrongs.length;
 
-        // Quick stats
-        document.getElementById('dashTotalQuestions').textContent = totalQuestions;
-        document.getElementById('dashWrongCount').textContent = wrongCount;
-        document.getElementById('dashCategories').textContent = categories.length;
+    document.getElementById('dashTotalQuestions').textContent = totalQuestions;
+    document.getElementById('dashWrongCount').textContent = wrongCount;
+    document.getElementById('dashCategories').textContent = categories.length;
 
-        // Compute overall accuracy from stats
-        if (statsRes.stats && statsRes.stats.length > 0) {
-            let totalAcc = 0, n = 0;
-            for (const s of statsRes.stats) {
-                if (s.completed > 0) { totalAcc += s.accuracy; n++; }
-            }
-            const avgAcc = n > 0 ? Math.round(totalAcc / n * 100) : 0;
-            document.getElementById('dashAccuracy').textContent = avgAcc + '%';
-        } else {
-            document.getElementById('dashAccuracy').textContent = 'N/A';
-        }
-
-        // Category cards
-        const cardsDiv = document.getElementById('dashCategoryCards');
-        if (categories.length === 0) {
-            cardsDiv.innerHTML = '<div class="col-12"><div class="empty-state"><div class="empty-icon">&#x1F4C1;</div><p>暂无分类，请先导入题库</p></div></div>';
-            return;
-        }
-
-        // Build stats map
-        const statsMap = {};
-        if (statsRes.stats) {
-            for (const s of statsRes.stats) statsMap[s.category_name] = s;
-        }
-
-        // Count questions per category
-        const catCounts = {};
-        for (const c of categories) catCounts[c.id] = { name: c.name, desc: c.description, count: 0, accuracy: 0 };
-        // We need per-category counts — use the stats for that
-        for (const s of (statsRes.stats || [])) {
-            const cat = categories.find(c => c.name === s.category_name);
-            if (cat) {
-                catCounts[cat.id] = catCounts[cat.id] || { name: cat.name, desc: cat.description, count: 0, accuracy: 0 };
-                catCounts[cat.id].count = s.total_questions;
-                catCounts[cat.id].accuracy = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
-            }
-        }
-
-        let cardsHtml = '';
-        for (const cat of categories) {
-            const info = catCounts[cat.id] || { count: 0, accuracy: 0 };
-            cardsHtml += `
-            <div class="col-md-6 col-lg-4">
-                <div class="card card-category">
-                    <div class="category-header"><div class="category-name">${cat.name}</div><div class="category-desc">${cat.description || '暂无描述'}</div></div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">题目数量</span><span class="fw-bold">${info.count}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted small">正确率</span><span class="fw-bold">${info.accuracy}%</span>
-                        </div>
-                        <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="quickStartQuiz(${cat.id})">开始刷题</button>
-                    </div>
-                </div>
-            </div>`;
-        }
-        cardsDiv.innerHTML = cardsHtml;
-    } catch(e) {
-        showToast('加载仪表盘失败: ' + e.message, 'error');
+    // Compute overall accuracy from records
+    var totalCorrect = 0, totalAttempts = 0;
+    for (var i = 0; i < records.length; i++) {
+        totalCorrect += records[i].correct || 0;
+        totalAttempts += records[i].total || 0;
     }
+    var avgAcc = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts * 100) : 0;
+    document.getElementById('dashAccuracy').textContent = totalAttempts > 0 ? avgAcc + '%' : 'N/A';
+
+    // Category cards
+    var cardsDiv = document.getElementById('dashCategoryCards');
+    if (categories.length === 0) {
+        cardsDiv.innerHTML = '<div class="col-12"><div class="empty-state"><div class="empty-icon">&#x1F4C1;</div><p>暂无分类，请先导入题库</p></div></div>';
+        return;
+    }
+
+    // Compute per-category stats
+    var catStats = {};
+    for (var i = 0; i < categories.length; i++) {
+        catStats[categories[i].id] = { count: 0, correct: 0, attempts: 0, accuracy: 0 };
+    }
+    for (var i = 0; i < questions.length; i++) {
+        var cid = questions[i].category_id;
+        if (catStats[cid]) catStats[cid].count++;
+    }
+    for (var i = 0; i < records.length; i++) {
+        var cid2 = records[i].category_id;
+        if (catStats[cid2]) {
+            catStats[cid2].correct += records[i].correct || 0;
+            catStats[cid2].attempts += records[i].total || 0;
+        }
+    }
+    for (var k in catStats) {
+        if (catStats[k].attempts > 0) {
+            catStats[k].accuracy = Math.round(catStats[k].correct / catStats[k].attempts * 100);
+        }
+    }
+
+    var cardsHtml = '';
+    for (var i = 0; i < categories.length; i++) {
+        var cat = categories[i];
+        var info = catStats[cat.id] || { count: 0, accuracy: 0 };
+        cardsHtml += '<div class="col-md-6 col-lg-4"><div class="card card-category"><div class="category-header"><div class="category-name">' + cat.name + '</div><div class="category-desc">' + (cat.description || '暂无描述') + '</div></div><div class="card-body"><div class="d-flex justify-content-between mb-2"><span class="text-muted small">题目数量</span><span class="fw-bold">' + info.count + '</span></div><div class="d-flex justify-content-between mb-2"><span class="text-muted small">正确率</span><span class="fw-bold">' + info.accuracy + '%</span></div><button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="quickStartQuiz(' + cat.id + ')">开始刷题</button></div></div></div>';
+    }
+    cardsDiv.innerHTML = cardsHtml;
 }
 
 function quickStartQuiz(catId) {
-    document.querySelector('#mainTabs [data-tab="quiz"]').click();
-    setTimeout(() => {
+    var btn = document.querySelector('#mainTabs [data-tab="quiz"]');
+    if (btn) btn.click();
+    setTimeout(function() {
         document.getElementById('quizCategory').value = catId;
     }, 100);
 }
@@ -836,108 +927,105 @@ function quickStartQuiz(catId) {
 // ============================================================
 // Tab 2: Question Bank
 // ============================================================
-let bankPage = 0;
-const BANK_PAGE_SIZE = 50;
+var bankPage = 0;
+var BANK_PAGE_SIZE = 50;
 
-async function loadQuestionBank(page = 0) {
+function loadQuestionBank(page) {
+    if (page === undefined) page = 0;
     bankPage = page;
-    await refreshCategories();
+    refreshCategories();
     populateCategorySelect('bankFilterCat', true);
 
-    const catId = document.getElementById('bankFilterCat').value;
-    const type = document.getElementById('bankFilterType').value;
-    const search = document.getElementById('bankFilterSearch').value;
+    var catId = document.getElementById('bankFilterCat').value;
+    var type = document.getElementById('bankFilterType').value;
+    var search = document.getElementById('bankFilterSearch').value.trim().toLowerCase();
 
-    const params = new URLSearchParams();
-    if (catId) params.set('category_id', catId);
-    if (type) params.set('type', type);
-    if (search) params.set('search', search);
-    params.set('limit', BANK_PAGE_SIZE);
-    params.set('offset', page * BANK_PAGE_SIZE);
+    var questions = lsGet('quiz_questions', []);
 
-    const tbody = document.getElementById('bankTableBody');
-    showLoading(tbody);
-
-    try {
-        const data = await api('/api/questions?' + params.toString());
-        const total = data.total || 0;
-        const questions = data.questions || [];
-
-        document.getElementById('bankPaginationInfo').textContent =
-            `共 ${total} 道题目，第 ${page + 1}/${Math.ceil(total / BANK_PAGE_SIZE) || 1} 页`;
-
-        // Pagination buttons
-        const totalPages = Math.ceil(total / BANK_PAGE_SIZE);
-        let pagHtml = '';
-        pagHtml += `<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(${page-1})" ${page<=0?'disabled':''}>上一页</button>`;
-        pagHtml += `<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(${page+1})" ${page>=totalPages-1?'disabled':''}>下一页</button>`;
-        document.getElementById('bankPagination').innerHTML = pagHtml;
-
-        if (questions.length === 0) {
-            showEmpty(tbody, '暂无题目，请先添加或导入题目');
-            return;
-        }
-
-        let html = '';
-        // Build category lookup
-        const catMap = {};
-        for (const c of categoriesCache) catMap[c.id] = c.name;
-
-        for (const q of questions) {
-            const catName = catMap[q.category_id] || '未知';
-            html += `<tr onclick="viewQuestionDetail(${q.id})" class="clickable">
-                <td>${q.id}</td>
-                <td><small>${catName}</small></td>
-                <td>${getTypeBadge(q.question_type)}</td>
-                <td><span class="content-preview">${truncate(q.content, 50)}</span></td>
-                <td><span class="difficulty-stars">${difficultyStars(q.difficulty)}</span></td>
-                <td onclick="event.stopPropagation()">
-                    <button class="btn btn-outline-primary btn-sm me-1" onclick="editQuestion(${q.id})" title="编辑">&#x270F;</button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteQuestion(${q.id})" title="删除">&#x1F5D1;</button>
-                </td>
-            </tr>`;
-        }
-        tbody.innerHTML = html;
-    } catch(e) {
-        showError(tbody, '加载题目失败: ' + e.message);
+    // Filter
+    var filtered = questions;
+    if (catId) {
+        var cid = parseInt(catId);
+        filtered = filtered.filter(function(q) { return q.category_id === cid; });
     }
+    if (type) {
+        filtered = filtered.filter(function(q) { return q.question_type === type; });
+    }
+    if (search) {
+        filtered = filtered.filter(function(q) { return q.content.toLowerCase().indexOf(search) !== -1; });
+    }
+
+    var total = filtered.length;
+    var totalPages = Math.ceil(total / BANK_PAGE_SIZE) || 1;
+
+    document.getElementById('bankPaginationInfo').textContent =
+        '共 ' + total + ' 道题目，第 ' + (page + 1) + '/' + totalPages + ' 页';
+
+    var pagHtml = '';
+    pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page-1) + ')" ' + (page<=0?'disabled':'') + '>上一页</button>';
+    pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page+1) + ')" ' + (page>=totalPages-1?'disabled':'') + '>下一页</button>';
+    document.getElementById('bankPagination').innerHTML = pagHtml;
+
+    var tbody = document.getElementById('bankTableBody');
+
+    if (filtered.length === 0) {
+        showEmpty(tbody, '暂无题目，请先添加或导入题目');
+        return;
+    }
+
+    var pageQuestions = filtered.slice(page * BANK_PAGE_SIZE, (page + 1) * BANK_PAGE_SIZE);
+
+    var catMap = {};
+    for (var i = 0; i < categoriesCache.length; i++) {
+        catMap[categoriesCache[i].id] = categoriesCache[i].name;
+    }
+
+    var html = '';
+    for (var i = 0; i < pageQuestions.length; i++) {
+        var q = pageQuestions[i];
+        var catName = catMap[q.category_id] || '未知';
+        html += '<tr onclick="viewQuestionDetail(' + q.id + ')" class="clickable"><td>' + q.id + '</td><td><small>' + catName + '</small></td><td>' + getTypeBadge(q.question_type) + '</td><td><span class="content-preview">' + truncate(q.content, 50) + '</span></td><td><span class="difficulty-stars">' + difficultyStars(q.difficulty) + '</span></td><td onclick="event.stopPropagation()"><button class="btn btn-outline-primary btn-sm me-1" onclick="editQuestion(' + q.id + ')" title="编辑">&#x270F;</button><button class="btn btn-outline-danger btn-sm" onclick="deleteQuestion(' + q.id + ')" title="删除">&#x1F5D1;</button></td></tr>';
+    }
+    tbody.innerHTML = html;
 }
 
-async function viewQuestionDetail(qid) {
-    try {
-        const q = await api('/api/questions/' + qid);
-        const catName = (categoriesCache.find(c => c.id === q.category_id) || {}).name || '未知';
-        const options = q.options || [];
-        let html = `
-            <p><strong>ID:</strong> ${q.id} &nbsp; <strong>分类:</strong> ${catName} &nbsp; ${getTypeBadge(q.question_type)} &nbsp; <span class="difficulty-stars">${difficultyStars(q.difficulty)}</span></p>
-            <div class="card bg-light p-3 mb-3"><strong>题目内容:</strong><br>${q.content}</div>`;
-        if (options.length > 0) {
-            html += '<div class="card bg-light p-3 mb-3"><strong>选项:</strong><br>';
-            for (const o of options) html += `${o}<br>`;
-            html += '</div>';
-        }
-        html += `<div class="card bg-light p-3 mb-3"><strong>正确答案:</strong> ${q.answer}</div>`;
-        if (q.analysis) html += `<div class="card bg-light p-3 mb-3"><strong>解析:</strong><br>${q.analysis}</div>`;
-        html += `<p class="small text-muted">来源: ${q.source || '-'} &nbsp; 创建: ${q.created_at || '-'}</p>`;
-
-        document.getElementById('questionDetailBody').innerHTML = html;
-        document.getElementById('detailEditBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); editQuestion(qid); };
-        document.getElementById('detailDeleteBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); deleteQuestion(qid); };
-        new bootstrap.Modal(document.getElementById('questionDetailModal')).show();
-    } catch(e) {
-        showToast('加载题目详情失败: ' + e.message, 'error');
+function viewQuestionDetail(qid) {
+    var questions = lsGet('quiz_questions', []);
+    var q = null;
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === qid) { q = questions[i]; break; }
     }
+    if (!q) { showToast('题目未找到', 'error'); return; }
+
+    refreshCategories();
+    var cat = findCategoryById(q.category_id);
+    var catName = cat ? cat.name : '未知';
+    var options = q.options || [];
+
+    var html = '<p><strong>ID:</strong> ' + q.id + ' &nbsp; <strong>分类:</strong> ' + catName + ' &nbsp; ' + getTypeBadge(q.question_type) + ' &nbsp; <span class="difficulty-stars">' + difficultyStars(q.difficulty) + '</span></p>';
+    html += '<div class="card bg-light p-3 mb-3"><strong>题目内容:</strong><br>' + q.content + '</div>';
+    if (options.length > 0) {
+        html += '<div class="card bg-light p-3 mb-3"><strong>选项:</strong><br>';
+        for (var i = 0; i < options.length; i++) html += options[i] + '<br>';
+        html += '</div>';
+    }
+    html += '<div class="card bg-light p-3 mb-3"><strong>正确答案:</strong> ' + q.answer + '</div>';
+    if (q.analysis) html += '<div class="card bg-light p-3 mb-3"><strong>解析:</strong><br>' + q.analysis + '</div>';
+    html += '<p class="small text-muted">来源: ' + (q.source || '-') + ' &nbsp; 创建: ' + (q.created_at || '-') + '</p>';
+
+    document.getElementById('questionDetailBody').innerHTML = html;
+    document.getElementById('detailEditBtn').onclick = function() { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); editQuestion(qid); };
+    document.getElementById('detailDeleteBtn').onclick = function() { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); deleteQuestion(qid); };
+    new bootstrap.Modal(document.getElementById('questionDetailModal')).show();
 }
 
-async function deleteQuestion(qid) {
-    if (!await confirmDialog('确定要删除此题目吗？此操作不可撤销。')) return;
-    try {
-        await api('/api/questions/' + qid, { method: 'DELETE' });
-        showToast('题目已删除');
-        loadQuestionBank(bankPage);
-    } catch(e) {
-        showToast('删除失败: ' + e.message, 'error');
-    }
+function deleteQuestion(qid) {
+    if (!confirmDialog('确定要删除此题目吗？此操作不可撤销。')) return;
+    var questions = lsGet('quiz_questions', []);
+    questions = questions.filter(function(q) { return q.id !== qid; });
+    lsSet('quiz_questions', questions);
+    showToast('题目已删除');
+    loadQuestionBank(bankPage);
 }
 
 function openQuestionModal() {
@@ -950,35 +1038,40 @@ function openQuestionModal() {
     document.getElementById('qeSource').value = '';
     document.getElementById('qeType').value = 'single';
     document.getElementById('qeDifficulty').value = '3';
+    refreshCategories();
     populateCategorySelect('qeCategory', false);
     onQeTypeChange();
     new bootstrap.Modal(document.getElementById('questionEditModal')).show();
 }
 
-async function editQuestion(qid) {
-    try {
-        const q = await api('/api/questions/' + qid);
-        document.getElementById('qeId').value = q.id;
-        document.getElementById('questionEditTitle').textContent = '编辑题目';
-        document.getElementById('qeContent').value = q.content;
-        document.getElementById('qeOptions').value = Array.isArray(q.options) ? q.options.join('\n') : (q.options_json || '');
-        document.getElementById('qeAnswer').value = q.answer;
-        document.getElementById('qeAnalysis').value = q.analysis || '';
-        document.getElementById('qeSource').value = q.source || '';
-        document.getElementById('qeType').value = q.question_type || 'single';
-        document.getElementById('qeDifficulty').value = q.difficulty || 1;
-        populateCategorySelect('qeCategory', false);
-        document.getElementById('qeCategory').value = q.category_id;
-        onQeTypeChange();
-        new bootstrap.Modal(document.getElementById('questionEditModal')).show();
-    } catch(e) {
-        showToast('加载题目失败: ' + e.message, 'error');
+function editQuestion(qid) {
+    var questions = lsGet('quiz_questions', []);
+    var q = null;
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === qid) { q = questions[i]; break; }
     }
+    if (!q) { showToast('题目未找到', 'error'); return; }
+
+    document.getElementById('qeId').value = q.id;
+    document.getElementById('questionEditTitle').textContent = '编辑题目';
+    document.getElementById('qeContent').value = q.content;
+    var opts = q.options || [];
+    document.getElementById('qeOptions').value = Array.isArray(opts) ? opts.join('\n') : '';
+    document.getElementById('qeAnswer').value = q.answer;
+    document.getElementById('qeAnalysis').value = q.analysis || '';
+    document.getElementById('qeSource').value = q.source || '';
+    document.getElementById('qeType').value = q.question_type || 'single';
+    document.getElementById('qeDifficulty').value = q.difficulty || 1;
+    refreshCategories();
+    populateCategorySelect('qeCategory', false);
+    document.getElementById('qeCategory').value = q.category_id;
+    onQeTypeChange();
+    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
 }
 
 function onQeTypeChange() {
-    const type = document.getElementById('qeType').value;
-    const optsGroup = document.getElementById('qeOptionsGroup');
+    var type = document.getElementById('qeType').value;
+    var optsGroup = document.getElementById('qeOptionsGroup');
     if (type === 'fill' || type === 'short') {
         optsGroup.style.display = 'none';
         document.getElementById('qeOptions').value = '';
@@ -987,65 +1080,86 @@ function onQeTypeChange() {
     }
 }
 
-async function saveQuestion() {
-    const id = document.getElementById('qeId').value;
-    const q = {
-        category_id: parseInt(document.getElementById('qeCategory').value) || 0,
-        question_type: document.getElementById('qeType').value,
-        content: document.getElementById('qeContent').value.trim(),
-        answer: document.getElementById('qeAnswer').value.trim(),
-        analysis: document.getElementById('qeAnalysis').value.trim(),
-        difficulty: parseInt(document.getElementById('qeDifficulty').value) || 1,
-        source: document.getElementById('qeSource').value.trim() || 'manual'
-    };
+function saveQuestion() {
+    var idVal = document.getElementById('qeId').value;
+    var categoryId = parseInt(document.getElementById('qeCategory').value) || 0;
+    var questionType = document.getElementById('qeType').value;
+    var content = document.getElementById('qeContent').value.trim();
+    var answer = document.getElementById('qeAnswer').value.trim();
+    var analysis = document.getElementById('qeAnalysis').value.trim();
+    var difficulty = parseInt(document.getElementById('qeDifficulty').value) || 1;
+    var source = document.getElementById('qeSource').value.trim() || 'manual';
 
-    if (!q.content) { showToast('题目内容不能为空', 'error'); return; }
-    if (!q.answer) { showToast('正确答案不能为空', 'error'); return; }
-    if (q.category_id === 0) { showToast('请选择分类', 'error'); return; }
+    if (!content) { showToast('题目内容不能为空', 'error'); return; }
+    if (!answer) { showToast('正确答案不能为空', 'error'); return; }
+    if (categoryId === 0) { showToast('请选择分类', 'error'); return; }
 
-    // Parse options
-    const type = q.question_type;
-    if (type !== 'fill' && type !== 'short') {
-        let optsText = document.getElementById('qeOptions').value.trim();
+    var options = [];
+    if (questionType !== 'fill' && questionType !== 'short') {
+        var optsText = document.getElementById('qeOptions').value.trim();
         if (optsText) {
-            const lines = optsText.split('\n').map(s => s.trim()).filter(s => s);
-            q.options = lines;
-        } else {
-            q.options = [];
+            options = optsText.split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
         }
-    } else {
-        q.options = [];
     }
 
-    try {
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? '/api/questions/' + id : '/api/questions';
-        await api(url, { method, body: JSON.stringify(q) });
-        showToast(id ? '题目已更新' : '题目已添加');
-        bootstrap.Modal.getInstance(document.getElementById('questionEditModal')).hide();
-        loadQuestionBank(bankPage);
-    } catch(e) {
-        showToast('保存失败: ' + e.message, 'error');
+    var questions = lsGet('quiz_questions', []);
+    if (idVal) {
+        // Edit existing
+        var eid = parseInt(idVal);
+        for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === eid) {
+                questions[i].category_id = categoryId;
+                questions[i].question_type = questionType;
+                questions[i].content = content;
+                questions[i].options = options;
+                questions[i].answer = answer;
+                questions[i].analysis = analysis;
+                questions[i].difficulty = difficulty;
+                questions[i].source = source;
+                break;
+            }
+        }
+        lsSet('quiz_questions', questions);
+        showToast('题目已更新');
+    } else {
+        // Add new
+        var newQ = {
+            id: Date.now(),
+            category_id: categoryId,
+            question_type: questionType,
+            content: content,
+            options: options,
+            answer: answer,
+            analysis: analysis,
+            difficulty: difficulty,
+            source: source,
+            created_at: new Date().toISOString()
+        };
+        questions.push(newQ);
+        lsSet('quiz_questions', questions);
+        showToast('题目已添加');
     }
+    bootstrap.Modal.getInstance(document.getElementById('questionEditModal')).hide();
+    loadQuestionBank(bankPage);
 }
 
 // ============================================================
 // Tab 3: Import
 // ============================================================
-let importQuestions = [];
+var importQuestions = [];
 
-async function loadImportTab() {
-    await refreshCategories();
+function loadImportTab() {
+    refreshCategories();
     populateCategorySelect('importCatSelect', false);
 }
 
 function handleImportFile(event) {
-    const file = event.target.files[0];
+    var file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function(e) {
         try {
-            let data = JSON.parse(e.target.result);
+            var data = JSON.parse(e.target.result);
             if (!Array.isArray(data)) {
                 if (data.questions && Array.isArray(data.questions)) data = data.questions;
                 else throw new Error('JSON 格式不正确，需要题目数组');
@@ -1066,54 +1180,86 @@ function handleImportFile(event) {
 }
 
 function renderImportPreview(questions) {
-    const preview = document.getElementById('importPreview');
+    var preview = document.getElementById('importPreview');
     if (questions.length === 0) {
         preview.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>无题目数据</p></div>';
         return;
     }
-    let html = '<div class="list-group list-group-flush">';
-    for (let i = 0; i < Math.min(questions.length, 50); i++) {
-        const q = questions[i];
-        html += `<div class="list-group-item py-2"><small><strong>#${i+1}</strong> ${getTypeBadge(q.question_type || 'single')} ${truncate(q.content, 40)}</small></div>`;
+    var html = '<div class="list-group list-group-flush">';
+    var limit = Math.min(questions.length, 50);
+    for (var i = 0; i < limit; i++) {
+        var q = questions[i];
+        html += '<div class="list-group-item py-2"><small><strong>#' + (i+1) + '</strong> ' + getTypeBadge(q.question_type || 'single') + ' ' + truncate(q.content, 40) + '</small></div>';
     }
-    if (questions.length > 50) html += `<div class="list-group-item py-2 text-center text-muted small">... 还有 ${questions.length - 50} 道题目</div>`;
+    if (questions.length > 50) html += '<div class="list-group-item py-2 text-center text-muted small">... 还有 ' + (questions.length - 50) + ' 道题目</div>';
     html += '</div>';
     preview.innerHTML = html;
 }
 
-async function doImport() {
+function doImport() {
     if (importQuestions.length === 0) return;
-    const catId = parseInt(document.getElementById('importCatSelect').value) || 0;
-    const catName = document.getElementById('importCatNew').value.trim();
-    const source = document.getElementById('importSource').value.trim();
+    var catId = parseInt(document.getElementById('importCatSelect').value) || 0;
+    var catName = document.getElementById('importCatNew').value.trim();
+    var source = document.getElementById('importSource').value.trim();
 
     if (catId === 0 && !catName) {
         showToast('请选择已有分类或输入新分类名称', 'error');
         return;
     }
 
-    const body = {
-        category_id: catId,
-        category_name: catName,
-        source: source,
-        questions: importQuestions
-    };
-
     document.getElementById('importBtn').disabled = true;
     document.getElementById('importProgress').innerHTML = '<div class="spinner-border spinner-border-sm text-primary me-2"></div>正在导入...';
 
     try {
-        const result = await api('/api/questions/import', { method: 'POST', body: JSON.stringify(body) });
+        // Determine category ID
+        var finalCatId = catId;
+        if (!finalCatId && catName) {
+            // Create new category
+            refreshCategories();
+            finalCatId = Date.now();
+            var newCat = { id: finalCatId, name: catName, description: '', created_at: new Date().toISOString() };
+            categoriesCache.push(newCat);
+            lsSet('quiz_categories', categoriesCache);
+        }
+
+        var questions = lsGet('quiz_questions', []);
+        var imported = 0;
+        var failed = 0;
+        var now = new Date().toISOString();
+
+        for (var i = 0; i < importQuestions.length; i++) {
+            try {
+                var q = importQuestions[i];
+                questions.push({
+                    id: Date.now() + i,
+                    category_id: finalCatId,
+                    question_type: q.question_type || 'single',
+                    content: q.content || '',
+                    options: q.options || [],
+                    answer: q.answer || '',
+                    analysis: q.analysis || '',
+                    difficulty: q.difficulty || 1,
+                    source: source || q.source || 'import',
+                    created_at: now
+                });
+                imported++;
+            } catch(e) {
+                failed++;
+            }
+        }
+
+        lsSet('quiz_questions', questions);
+
         document.getElementById('importProgress').innerHTML =
-            `<div class="alert alert-success py-1 mt-2">导入完成：成功 ${result.imported} 道，失败 ${result.failed} 道</div>`;
-        showToast(`成功导入 ${result.imported} 道题目`);
+            '<div class="alert alert-success py-1 mt-2">导入完成：成功 ' + imported + ' 道，失败 ' + failed + ' 道</div>';
+        showToast('成功导入 ' + imported + ' 道题目');
         importQuestions = [];
         document.getElementById('importFileInput').value = '';
         document.getElementById('importPreviewCount').textContent = '0';
         document.getElementById('importPreview').innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>请先选择 .json 文件</p></div>';
     } catch(e) {
         showToast('导入失败: ' + e.message, 'error');
-        document.getElementById('importProgress').innerHTML = `<div class="alert alert-danger py-1 mt-2">导入失败: ${e.message}</div>`;
+        document.getElementById('importProgress').innerHTML = '<div class="alert alert-danger py-1 mt-2">导入失败: ' + e.message + '</div>';
     }
     document.getElementById('importBtn').disabled = false;
 }
@@ -1121,172 +1267,224 @@ async function doImport() {
 // ============================================================
 // Tab 4: Quiz
 // ============================================================
-let quizState = {
+var quizState = {
     questions: [],
     currentIndex: 0,
     correctCount: 0,
     wrongCount: 0,
-    answers: {},      // question_id -> user_answer
-    results: {},      // question_id -> {correct, correctAnswer, analysis}
-    submitted: {},    // question_id -> bool
+    answers: {},
+    results: {},
+    submitted: {},
     mode: 'sequential',
     categoryId: 0,
     active: false
 };
 
-async function loadQuizSetup() {
-    await refreshCategories();
+function loadQuizSetup() {
+    refreshCategories();
     populateCategorySelect('quizCategory', true);
 }
 
+function checkAnswerLocal(question, userAnswer) {
+    var correct = (question.answer || '').trim();
+    var user = (userAnswer || '').trim();
+
+    if (question.question_type === 'single') {
+        return correct.toUpperCase() === user.toUpperCase();
+    }
+    if (question.question_type === 'multi') {
+        // Sort both for multi-choice
+        var correctSorted = correct.toUpperCase().replace(/[,，]/g, '').split('').sort().join('');
+        var userSorted = user.toUpperCase().replace(/[,，]/g, '').split('').filter(function(c) { return c >= 'A' && c <= 'Z'; }).sort().join('');
+        return correctSorted === userSorted;
+    }
+    // For judge, fill, short - compare text
+    return correct.toLowerCase() === user.toLowerCase();
+}
+
+function addToWrongBook(question, userAnswer) {
+    var wrongs = lsGet('quiz_wrong', []);
+    var existing = null;
+    for (var i = 0; i < wrongs.length; i++) {
+        if (wrongs[i].question_id === question.id) { existing = wrongs[i]; break; }
+    }
+    if (existing) {
+        existing.wrong_count++;
+        existing.user_answer = userAnswer;
+        existing.reviewed = false;
+    } else {
+        var cat = findCategoryById(question.category_id);
+        wrongs.push({
+            id: Date.now(),
+            question_id: question.id,
+            category_id: question.category_id,
+            category_name: cat ? cat.name : '未知',
+            question_type: question.question_type,
+            content: question.content,
+            options: question.options || [],
+            answer: question.answer,
+            analysis: question.analysis || '',
+            user_answer: userAnswer,
+            wrong_count: 1,
+            reviewed: false,
+            created_at: new Date().toISOString()
+        });
+    }
+    lsSet('quiz_wrong', wrongs);
+}
+
 function startQuiz() {
-    const mode = document.getElementById('quizMode').value;
-    const categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
-    const count = parseInt(document.getElementById('quizCount').value) || 10;
+    var mode = document.getElementById('quizMode').value;
+    var categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
+    var count = parseInt(document.getElementById('quizCount').value) || 10;
 
     document.getElementById('quizSetup').style.display = 'none';
-
-    const activeDiv = document.getElementById('quizActive');
-    activeDiv.style.display = 'block';
-
-    // Show loading in quiz area
+    document.getElementById('quizActive').style.display = 'block';
     document.getElementById('quizQuestionArea').innerHTML =
         '<div class="loading-overlay"><div class="spinner-border text-primary"></div><span class="ms-2">正在加载题目...</span></div>';
 
-    const body = {
+    var questions = lsGet('quiz_questions', []);
+
+    // Filter by category
+    if (categoryId !== 0) {
+        questions = questions.filter(function(q) { return q.category_id === categoryId; });
+    }
+
+    // Filter by wrong only
+    if (mode === 'wrong_only') {
+        var wrongs = lsGet('quiz_wrong', []);
+        var wrongQids = wrongs.map(function(w) { return w.question_id; });
+        questions = questions.filter(function(q) { return wrongQids.indexOf(q.id) !== -1; });
+    }
+
+    if (questions.length === 0) {
+        showToast('没有可用的题目', 'warning');
+        resetQuiz();
+        return;
+    }
+
+    // Shuffle for random/exam mode
+    if (mode === 'random' || mode === 'exam') {
+        questions = shuffleArray(questions);
+    }
+
+    // Limit count
+    if (count > 0 && questions.length > count) {
+        questions = questions.slice(0, count);
+    }
+
+    quizState = {
+        questions: questions,
+        currentIndex: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        answers: {},
+        results: {},
+        submitted: {},
         mode: mode,
-        category_id: categoryId,
-        count: count,
-        wrong_only: mode === 'wrong_only'
+        categoryId: categoryId,
+        active: true
     };
 
-    api('/api/quiz/start', { method: 'POST', body: JSON.stringify(body) })
-        .then(data => {
-            if (!data.questions || data.questions.length === 0) {
-                showToast('没有可用的题目', 'warning');
-                resetQuiz();
-                return;
-            }
-            quizState = {
-                questions: data.questions,
-                currentIndex: 0,
-                correctCount: 0,
-                wrongCount: 0,
-                answers: {},
-                results: {},
-                submitted: {},
-                mode: mode,
-                categoryId: categoryId,
-                active: true,
-                quizId: data.quiz_id
-            };
-            renderCurrentQuestion();
-        })
-        .catch(e => {
-            showToast('加载题目失败: ' + e.message, 'error');
-            resetQuiz();
-        });
+    renderCurrentQuestion();
 }
 
 function renderCurrentQuestion() {
-    const q = quizState.questions[quizState.currentIndex];
+    var q = quizState.questions[quizState.currentIndex];
     if (!q) { finishQuiz(); return; }
 
-    const idx = quizState.currentIndex;
-    const total = quizState.questions.length;
+    var idx = quizState.currentIndex;
+    var total = quizState.questions.length;
 
-    // Update progress
-    document.getElementById('quizProgressText').textContent = `第 ${idx+1}/${total} 题`;
+    document.getElementById('quizProgressText').textContent = '第 ' + (idx+1) + '/' + total + ' 题';
     document.getElementById('quizScoreText').textContent =
-        `正确: ${quizState.correctCount} | 错误: ${quizState.wrongCount}`;
+        '正确: ' + quizState.correctCount + ' | 错误: ' + quizState.wrongCount;
     document.getElementById('quizProgressBar').style.width = ((idx / total) * 100) + '%';
 
-    const isSubmitted = quizState.submitted[q.id];
-    const result = quizState.results[q.id];
+    var isSubmitted = quizState.submitted[q.id];
+    var result = quizState.results[q.id];
+    var options = q.options || [];
 
-    let html = '';
-    html += `<div class="mb-3"><span class="fw-bold">${idx+1}.</span> ${getTypeBadge(q.question_type)} ${q.content}</div>`;
+    var html = '';
+    html += '<div class="mb-3"><span class="fw-bold">' + (idx+1) + '.</span> ' + getTypeBadge(q.question_type) + ' ' + q.content + '</div>';
 
-    const options = q.options || [];
     if (q.question_type === 'single' && options.length > 0) {
         html += '<div class="mb-3">';
-        for (let i = 0; i < options.length; i++) {
-            const optLabel = String.fromCharCode(65 + i);
-            const optText = options[i];
-            let cls = 'quiz-option';
+        for (var i = 0; i < options.length; i++) {
+            var optLabel = String.fromCharCode(65 + i);
+            var optText = options[i];
+            var cls = 'quiz-option';
             if (isSubmitted) {
                 if (result && result.correct_answer) {
-                    const correctLabel = result.correct_answer.trim().toUpperCase();
+                    var correctLabel = result.correct_answer.trim().toUpperCase();
                     if (optLabel === correctLabel) cls += ' reveal-correct';
                 }
                 if (quizState.answers[q.id] && quizState.answers[q.id].trim().toUpperCase() === optLabel) {
                     cls += result && result.correct ? ' correct' : ' incorrect';
                 }
-                html += `<div class="${cls}"><input type="radio" name="quizOpt" value="${optLabel}" disabled> <strong>${optLabel}.</strong> ${optText}</div>`;
+                html += '<div class="' + cls + '"><input type="radio" name="quizOpt" value="' + optLabel + '" disabled> <strong>' + optLabel + '.</strong> ' + optText + '</div>';
             } else {
-                html += `<label class="${cls}"><input type="radio" name="quizOpt" value="${optLabel}" onchange="selectQuizAnswer('${optLabel}')"> <strong>${optLabel}.</strong> ${optText}</label>`;
+                html += '<label class="' + cls + '"><input type="radio" name="quizOpt" value="' + optLabel + '" onchange="selectQuizAnswer(\'' + optLabel + '\')"> <strong>' + optLabel + '.</strong> ' + optText + '</label>';
             }
         }
         html += '</div>';
     } else if (q.question_type === 'multi' && options.length > 0) {
         html += '<div class="mb-3">';
-        for (let i = 0; i < options.length; i++) {
-            const optLabel = String.fromCharCode(65 + i);
-            const optText = options[i];
-            let cls = 'quiz-option';
+        for (var i = 0; i < options.length; i++) {
+            var optLabel2 = String.fromCharCode(65 + i);
+            var optText2 = options[i];
+            var cls2 = 'quiz-option';
             if (isSubmitted) {
                 if (result && result.correct_answer) {
-                    const correctRaw = result.correct_answer.trim().toUpperCase();
-                    const correctLabels = correctRaw.includes(',') ? correctRaw.split(',').map(s => s.trim()).filter(s => s) : correctRaw.split('').filter(c => c >= 'A' && c <= 'Z');
-                    if (correctLabels.includes(optLabel)) cls += ' reveal-correct';
+                    var correctRaw = result.correct_answer.trim().toUpperCase();
+                    var correctLabels = correctRaw.indexOf(',') !== -1 ? correctRaw.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : correctRaw.split('').filter(function(c) { return c >= 'A' && c <= 'Z'; });
+                    if (correctLabels.indexOf(optLabel2) !== -1) cls2 += ' reveal-correct';
                 }
-                const userRaw = (quizState.answers[q.id] || '').trim().toUpperCase();
-                const userLabels = userRaw.includes(',') ? userRaw.split(',').map(s => s.trim()).filter(s => s) : userRaw.split('').filter(c => c >= 'A' && c <= 'Z');
-                if (userLabels.includes(optLabel)) {
-                    cls += result && result.correct ? ' correct' : ' incorrect';
+                var userRaw = (quizState.answers[q.id] || '').trim().toUpperCase();
+                var userLabels = userRaw.indexOf(',') !== -1 ? userRaw.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : userRaw.split('').filter(function(c) { return c >= 'A' && c <= 'Z'; });
+                if (userLabels.indexOf(optLabel2) !== -1) {
+                    cls2 += result && result.correct ? ' correct' : ' incorrect';
                 }
-                html += `<div class="${cls}"><input type="checkbox" disabled> <strong>${optLabel}.</strong> ${optText}</div>`;
+                html += '<div class="' + cls2 + '"><input type="checkbox" disabled> <strong>' + optLabel2 + '.</strong> ' + optText2 + '</div>';
             } else {
-                html += `<label class="${cls}"><input type="checkbox" class="quiz-multi-cb" value="${optLabel}"> <strong>${optLabel}.</strong> ${optText}</label>`;
+                html += '<label class="' + cls2 + '"><input type="checkbox" class="quiz-multi-cb" value="' + optLabel2 + '"> <strong>' + optLabel2 + '.</strong> ' + optText2 + '</label>';
             }
         }
         html += '</div>';
     } else if (q.question_type === 'judge') {
-        // Judge questions: use options if present, otherwise default 对/错
-        const judgeOpts = options.length > 0 ? options : ['对', '错'];
+        var judgeOpts = options.length > 0 ? options : ['对', '错'];
         html += '<div class="mb-3">';
-        for (const opt of judgeOpts) {
-            const optVal = typeof opt === 'string' ? opt : String(opt);
-            let cls = 'quiz-option';
+        for (var j = 0; j < judgeOpts.length; j++) {
+            var optVal = typeof judgeOpts[j] === 'string' ? judgeOpts[j] : String(judgeOpts[j]);
+            var cls3 = 'quiz-option';
             if (isSubmitted) {
-                if (result && result.correct_answer && result.correct_answer.trim() === optVal) cls += ' reveal-correct';
+                if (result && result.correct_answer && result.correct_answer.trim() === optVal) cls3 += ' reveal-correct';
                 if (quizState.answers[q.id] && quizState.answers[q.id].trim() === optVal) {
-                    cls += result && result.correct ? ' correct' : ' incorrect';
+                    cls3 += result && result.correct ? ' correct' : ' incorrect';
                 }
-                html += `<div class="${cls}"><input type="radio" disabled> ${optVal}</div>`;
+                html += '<div class="' + cls3 + '"><input type="radio" disabled> ' + optVal + '</div>';
             } else {
-                html += `<label class="${cls}"><input type="radio" name="quizOpt" value="${optVal}" onchange="selectQuizAnswer('${escapeHtml(optVal)}')"> ${optVal}</label>`;
+                html += '<label class="' + cls3 + '"><input type="radio" name="quizOpt" value="' + escapeHtml(optVal) + '" onchange="selectQuizAnswer(\'' + escapeHtml(optVal) + '\')"> ' + optVal + '</label>';
             }
         }
         html += '</div>';
     } else {
-        // fill or short answer - text input
         if (isSubmitted) {
-            const userAns = quizState.answers[q.id] || '(未作答)';
-            html += `<div class="mb-3"><p><strong>你的答案:</strong> ${userAns}</p></div>`;
+            var userAns = quizState.answers[q.id] || '(未作答)';
+            html += '<div class="mb-3"><p><strong>你的答案:</strong> ' + userAns + '</p></div>';
         } else {
-            html += `<div class="mb-3"><label class="form-label">请输入答案：</label><input class="form-control" id="quizTextInput" placeholder="输入答案..."></div>`;
+            html += '<div class="mb-3"><label class="form-label">请输入答案：</label><input class="form-control" id="quizTextInput" placeholder="输入答案..."></div>';
         }
     }
 
     // Show result
     if (isSubmitted && result) {
-        html += `<div class="alert ${result.correct ? 'alert-success' : 'alert-danger'} py-2">`;
+        html += '<div class="alert ' + (result.correct ? 'alert-success' : 'alert-danger') + ' py-2">';
         html += result.correct
             ? '<span class="result-correct">&#x2714; 回答正确！</span>'
             : '<span class="result-incorrect">&#x2718; 回答错误</span>';
-        html += ` <strong>正确答案:</strong> ${result.correct_answer}`;
-        if (result.analysis) html += `<br><small><strong>解析:</strong> ${result.analysis}</small>`;
+        html += ' <strong>正确答案:</strong> ' + result.correct_answer;
+        if (result.analysis) html += '<br><small><strong>解析:</strong> ' + result.analysis + '</small>';
         html += '</div>';
     }
 
@@ -1295,31 +1493,31 @@ function renderCurrentQuestion() {
     if (!isSubmitted) {
         html += '<button class="btn btn-primary" onclick="submitQuizAnswer()">提交答案</button>';
     }
-    html += `<button class="btn ${isSubmitted ? 'btn-primary' : 'btn-outline-secondary'}" onclick="nextQuestion()">${quizState.currentIndex >= quizState.questions.length - 1 ? '查看结果' : '下一题'}</button>`;
+    html += '<button class="btn ' + (isSubmitted ? 'btn-primary' : 'btn-outline-secondary') + '" onclick="nextQuestion()">' + (quizState.currentIndex >= quizState.questions.length - 1 ? '查看结果' : '下一题') + '</button>';
     html += '</div>';
 
     document.getElementById('quizQuestionArea').innerHTML = html;
 }
 
 function selectQuizAnswer(value) {
-    const q = quizState.questions[quizState.currentIndex];
+    var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
     quizState.answers[q.id] = value;
 }
 
 function submitQuizAnswer() {
-    const q = quizState.questions[quizState.currentIndex];
+    var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
 
-    let userAnswer = '';
+    var userAnswer = '';
     if (q.question_type === 'multi') {
-        const cbs = document.querySelectorAll('.quiz-multi-cb:checked');
-        const vals = [];
-        cbs.forEach(cb => vals.push(cb.value));
+        var cbs = document.querySelectorAll('.quiz-multi-cb:checked');
+        var vals = [];
+        cbs.forEach(function(cb) { vals.push(cb.value); });
         vals.sort();
         userAnswer = vals.join('');
     } else if (q.question_type === 'fill' || q.question_type === 'short') {
-        userAnswer = document.getElementById('quizTextInput')?.value?.trim() || '';
+        userAnswer = document.getElementById('quizTextInput') ? document.getElementById('quizTextInput').value.trim() : '';
     } else {
         userAnswer = quizState.answers[q.id] || '';
     }
@@ -1330,39 +1528,28 @@ function submitQuizAnswer() {
     }
 
     quizState.answers[q.id] = userAnswer;
+    quizState.submitted[q.id] = true;
 
-    // Submit to API
-    const body = {
-        question_id: q.id,
-        user_answer: userAnswer,
-        category_id: quizState.categoryId,
-        mode: quizState.mode
+    var correct = checkAnswerLocal(q, userAnswer);
+
+    if (correct) {
+        quizState.correctCount++;
+    } else {
+        quizState.wrongCount++;
+        addToWrongBook(q, userAnswer);
+    }
+
+    quizState.results[q.id] = {
+        correct: correct,
+        correct_answer: q.answer,
+        analysis: q.analysis || ''
     };
 
-    const area = document.getElementById('quizQuestionArea');
-    area.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">正在评判...</span></div>';
-
-    api('/api/quiz/submit', { method: 'POST', body: JSON.stringify(body) })
-        .then(result => {
-            quizState.results[q.id] = result;
-            quizState.submitted[q.id] = true;
-            if (result.correct) quizState.correctCount++;
-            else quizState.wrongCount++;
-            renderCurrentQuestion();
-        })
-        .catch(e => {
-            // Fallback: if API fails, check locally
-            showToast('提交评判失败: ' + e.message, 'warning');
-            // Still mark as submitted so user can proceed
-            quizState.submitted[q.id] = true;
-            quizState.results[q.id] = { correct: false, correct_answer: '未知', analysis: '评判服务不可用' };
-            quizState.wrongCount++;
-            renderCurrentQuestion();
-        });
+    renderCurrentQuestion();
 }
 
 function nextQuestion() {
-    const q = quizState.questions[quizState.currentIndex];
+    var q = quizState.questions[quizState.currentIndex];
     if (!quizState.submitted[q.id]) {
         showToast('请先提交答案', 'warning');
         return;
@@ -1379,17 +1566,33 @@ function finishQuiz() {
     document.getElementById('quizActive').style.display = 'none';
     document.getElementById('quizSummary').style.display = 'block';
 
-    const total = quizState.questions.length;
-    const correct = quizState.correctCount;
-    const wrong = quizState.wrongCount;
-    const score = total > 0 ? Math.round(correct / total * 100) : 0;
+    var total = quizState.questions.length;
+    var correct = quizState.correctCount;
+    var wrong = quizState.wrongCount;
+    var score = total > 0 ? Math.round(correct / total * 100) : 0;
+
+    // Save record
+    var cat = findCategoryById(quizState.categoryId);
+    var records = lsGet('quiz_records', []);
+    records.push({
+        id: Date.now(),
+        category_id: quizState.categoryId,
+        category_name: cat ? cat.name : (quizState.categoryId === 0 ? '全部分类' : '未知'),
+        mode: quizState.mode,
+        total: total,
+        correct: correct,
+        wrong: wrong,
+        score: score,
+        created_at: new Date().toISOString()
+    });
+    lsSet('quiz_records', records);
 
     document.getElementById('quizSummaryTotal').textContent = total;
     document.getElementById('quizSummaryCorrect').textContent = correct;
     document.getElementById('quizSummaryWrong').textContent = wrong;
-    document.getElementById('quizSummaryScore').textContent = `得分: ${score}%`;
+    document.getElementById('quizSummaryScore').textContent = '得分: ' + score + '%';
 
-    const emoji = score >= 80 ? '&#x1F389;' : score >= 60 ? '&#x1F44D;' : '&#x1F4AA;';
+    var emoji = score >= 80 ? '&#x1F389;' : score >= 60 ? '&#x1F44D;' : '&#x1F4AA;';
     document.getElementById('quizSummaryEmoji').innerHTML = emoji;
     document.getElementById('quizProgressBar').style.width = '100%';
 }
@@ -1412,72 +1615,62 @@ function resetQuiz() {
 // ============================================================
 // Tab 5: Wrong Book
 // ============================================================
-async function loadWrongBook() {
-    await refreshCategories();
+function loadWrongBook() {
+    refreshCategories();
     populateCategorySelect('wrongFilterCat', true);
 
-    const catId = document.getElementById('wrongFilterCat').value;
-    const tbody = document.getElementById('wrongTableBody');
+    var catId = document.getElementById('wrongFilterCat').value;
+    var tbody = document.getElementById('wrongTableBody');
     showLoading(tbody);
 
-    try {
-        const params = catId && catId !== '0' ? '?category_id=' + catId : '';
-        const data = await api('/api/wrong' + params);
-        const wrongs = data.wrong_questions || [];
-        document.getElementById('wrongCountInfo').textContent = `共 ${data.total || wrongs.length} 道错题`;
+    var wrongs = lsGet('quiz_wrong', []);
 
-        if (wrongs.length === 0) {
-            showEmpty(tbody, '恭喜！没有错题');
-            return;
-        }
-
-        let html = '';
-        for (const w of wrongs) {
-            const options = w.options || [];
-            html += `<tr>
-                <td>${w.id}</td>
-                <td><small>${w.category_name || '未知'}</small></td>
-                <td><span title="${w.content}">${getTypeBadge(w.question_type)} ${truncate(w.content, 30)}</span></td>
-                <td><span class="text-danger">${truncate(w.user_answer, 20) || '-'}</span></td>
-                <td><span class="text-success">${truncate(w.answer, 20)}</span></td>
-                <td><span class="badge bg-danger">${w.wrong_count}次</span></td>
-                <td>${w.reviewed ? '<span class="badge bg-success">已复习</span>' : '<span class="badge bg-warning">待复习</span>'}</td>
-                <td>
-                    <button class="btn btn-outline-success btn-sm me-1" onclick="reviewWrong(${w.id})" ${w.reviewed?'disabled':''} title="标记已复习">&#x2713;</button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteWrong(${w.id})" title="删除">&#x1F5D1;</button>
-                </td>
-            </tr>`;
-        }
-        tbody.innerHTML = html;
-    } catch(e) {
-        showError(tbody, '加载错题本失败: ' + e.message);
+    if (catId && catId !== '0') {
+        var cid = parseInt(catId);
+        wrongs = wrongs.filter(function(w) { return w.category_id === cid; });
     }
+
+    document.getElementById('wrongCountInfo').textContent = '共 ' + wrongs.length + ' 道错题';
+
+    if (wrongs.length === 0) {
+        showEmpty(tbody, '恭喜！没有错题');
+        return;
+    }
+
+    var html = '';
+    for (var i = 0; i < wrongs.length; i++) {
+        var w = wrongs[i];
+        html += '<tr><td>' + w.id + '</td><td><small>' + (w.category_name || '未知') + '</small></td><td><span title="' + escapeHtml(w.content) + '">' + getTypeBadge(w.question_type) + ' ' + truncate(w.content, 30) + '</span></td><td><span class="text-danger">' + truncate(w.user_answer, 20) + '</span></td><td><span class="text-success">' + truncate(w.answer, 20) + '</span></td><td><span class="badge bg-danger">' + w.wrong_count + '次</span></td><td>' + (w.reviewed ? '<span class="badge bg-success">已复习</span>' : '<span class="badge bg-warning">待复习</span>') + '</td><td><button class="btn btn-outline-success btn-sm me-1" onclick="reviewWrong(' + w.id + ')" ' + (w.reviewed ? 'disabled' : '') + ' title="标记已复习">&#x2713;</button><button class="btn btn-outline-danger btn-sm" onclick="deleteWrong(' + w.id + ')" title="删除">&#x1F5D1;</button></td></tr>';
+    }
+    tbody.innerHTML = html;
 }
 
-async function reviewWrong(id) {
-    try {
-        await api('/api/wrong/' + id + '/review', { method: 'PUT' });
-        showToast('已标记为已复习');
-        loadWrongBook();
-    } catch(e) {
-        showToast('操作失败: ' + e.message, 'error');
+function reviewWrong(id) {
+    var wrongs = lsGet('quiz_wrong', []);
+    for (var i = 0; i < wrongs.length; i++) {
+        if (wrongs[i].id === id) {
+            wrongs[i].reviewed = true;
+            break;
+        }
     }
+    lsSet('quiz_wrong', wrongs);
+    showToast('已标记为已复习');
+    loadWrongBook();
 }
 
-async function deleteWrong(id) {
-    if (!await confirmDialog('确定要删除此错题记录吗？')) return;
-    try {
-        await api('/api/wrong/' + id, { method: 'DELETE' });
-        showToast('已删除');
-        loadWrongBook();
-    } catch(e) {
-        showToast('删除失败: ' + e.message, 'error');
-    }
+function deleteWrong(id) {
+    if (!confirmDialog('确定要删除此错题记录吗？')) return;
+    var wrongs = lsGet('quiz_wrong', []);
+    wrongs = wrongs.filter(function(w) { return w.id !== id; });
+    lsSet('quiz_wrong', wrongs);
+    showToast('已删除');
+    loadWrongBook();
 }
 
 function redoWrongQuestions() {
-    document.querySelector('#mainTabs [data-tab="quiz"]').click();
-    setTimeout(() => {
+    var btn = document.querySelector('#mainTabs [data-tab="quiz"]');
+    if (btn) btn.click();
+    setTimeout(function() {
         document.getElementById('quizMode').value = 'wrong_only';
     }, 100);
 }
@@ -1485,15 +1678,16 @@ function redoWrongQuestions() {
 // ============================================================
 // Tab 6: AI Assistant
 // ============================================================
-let currentAiSub = 'config';
+var currentAiSub = 'config';
 
 function switchAiSub(sub) {
     currentAiSub = sub;
-    document.querySelectorAll('.ai-sub-pane').forEach(p => p.style.display = 'none');
-    document.querySelectorAll('#aiSubTabs .nav-link').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ai-sub-pane').forEach(function(p) { p.style.display = 'none'; });
+    document.querySelectorAll('#aiSubTabs .nav-link').forEach(function(b) { b.classList.remove('active'); });
 
-    document.getElementById('aiSub' + sub.charAt(0).toUpperCase() + sub.slice(1)).style.display = 'block';
-    const btn = document.querySelector(`#aiSubTabs [data-ai-sub="${sub}"]`);
+    var paneId = 'aiSub' + sub.charAt(0).toUpperCase() + sub.slice(1);
+    document.getElementById(paneId).style.display = 'block';
+    var btn = document.querySelector('#aiSubTabs [data-ai-sub="' + sub + '"]');
     if (btn) btn.classList.add('active');
 
     if (sub === 'config') loadAiConfig();
@@ -1501,19 +1695,11 @@ function switchAiSub(sub) {
 }
 
 function getAiConfig() {
-    try {
-        const stored = localStorage.getItem('quiz_ai_config');
-        if (stored) return JSON.parse(stored);
-    } catch(e) {}
-    return { provider: 'openai', base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-3.5-turbo' };
-}
-
-function saveAiConfigToStorage(config) {
-    localStorage.setItem('quiz_ai_config', JSON.stringify(config));
+    return lsGet('quiz_ai_config', { provider: 'openai', base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-3.5-turbo' });
 }
 
 function loadAiConfig() {
-    const config = getAiConfig();
+    var config = getAiConfig();
     document.getElementById('aiProvider').value = config.provider || 'openai';
     document.getElementById('aiBaseUrl').value = config.base_url || '';
     document.getElementById('aiApiKey').value = config.api_key || '';
@@ -1522,311 +1708,330 @@ function loadAiConfig() {
 }
 
 function onAiProviderChange() {
-    const provider = document.getElementById('aiProvider').value;
-    const defaults = AI_PROVIDERS[provider] || {};
+    var provider = document.getElementById('aiProvider').value;
+    var defaults = AI_PROVIDERS[provider] || {};
     document.getElementById('aiBaseUrl').value = defaults.base_url || '';
     document.getElementById('aiModel').value = defaults.model || '';
 }
 
 function saveAiConfig() {
-    const config = {
+    var config = {
         provider: document.getElementById('aiProvider').value,
         base_url: document.getElementById('aiBaseUrl').value.trim(),
         api_key: document.getElementById('aiApiKey').value.trim(),
         model: document.getElementById('aiModel').value.trim()
     };
-    saveAiConfigToStorage(config);
+    lsSet('quiz_ai_config', config);
     showToast('AI 配置已保存');
 }
 
 async function testAiConnection() {
     document.getElementById('aiTestResult').innerHTML = '<span class="text-muted">测试中...</span>';
-    const config = getAiConfig();
+    var config = getAiConfig();
     if (!config.base_url || !config.api_key) {
         document.getElementById('aiTestResult').innerHTML = '<span class="text-danger">请先完善配置</span>';
         return;
     }
     try {
-        await api('/api/ai/generate', {
-            method: 'POST',
-            body: JSON.stringify({
-                ...config,
-                topic: '测试',
-                question_type: 'single',
-                difficulty: 1
-            })
-        });
-        document.getElementById('aiTestResult').innerHTML = '<span class="text-success">连接成功</span>';
+        var result = await aiChat('You are a helpful assistant.', 'Say "OK" in Chinese.');
+        if (result.indexOf('AI服务') === 0) {
+            document.getElementById('aiTestResult').innerHTML = '<span class="text-danger">连接失败: ' + result + '</span>';
+        } else {
+            document.getElementById('aiTestResult').innerHTML = '<span class="text-success">连接成功</span>';
+        }
     } catch(e) {
         document.getElementById('aiTestResult').innerHTML = '<span class="text-danger">连接失败: ' + e.message + '</span>';
     }
 }
 
-async function loadAiQuestionSelect() {
-    await refreshCategories();
-    try {
-        const data = await api('/api/questions?limit=200');
-        const questions = data.questions || [];
-        let options = '<option value="">请选择题目...</option>';
-        for (const q of questions) {
-            options += `<option value="${q.id}">[${TYPE_LABELS[q.question_type] || q.question_type}] ${truncate(q.content, 50)}</option>`;
-        }
-        const selA = document.getElementById('aiAnalyzeQuestion');
-        const selV = document.getElementById('aiVariantQuestion');
-        if (selA) selA.innerHTML = options;
-        if (selV) selV.innerHTML = options;
-    } catch(e) {
-        showToast('加载题目列表失败: ' + e.message, 'error');
+function loadAiQuestionSelect() {
+    var questions = lsGet('quiz_questions', []);
+    var options = '<option value="">请选择题目...</option>';
+    for (var i = 0; i < Math.min(questions.length, 200); i++) {
+        var q = questions[i];
+        options += '<option value="' + q.id + '">[' + (TYPE_LABELS[q.question_type] || q.question_type) + '] ' + truncate(q.content, 50) + '</option>';
     }
+    var selA = document.getElementById('aiAnalyzeQuestion');
+    var selV = document.getElementById('aiVariantQuestion');
+    if (selA) selA.innerHTML = options;
+    if (selV) selV.innerHTML = options;
 }
 
 async function doAiAnalyze() {
-    const qid = document.getElementById('aiAnalyzeQuestion').value;
+    var qid = document.getElementById('aiAnalyzeQuestion').value;
     if (!qid) { showToast('请选择题目', 'warning'); return; }
-    const config = getAiConfig();
+    var config = getAiConfig();
     if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
 
-    const resultDiv = document.getElementById('aiAnalyzeResult');
+    var questions = lsGet('quiz_questions', []);
+    var question = null;
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === parseInt(qid)) { question = questions[i]; break; }
+    }
+    if (!question) { showToast('题目未找到', 'error'); return; }
+
+    var resultDiv = document.getElementById('aiAnalyzeResult');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在解析...</span></div>';
 
-    try {
-        const question = await api('/api/questions/' + qid);
-        const body = {
-            ...config,
-            content: question.content,
-            options: question.options || [],
-            answer: question.answer || ''
-        };
-        const result = await api('/api/ai/analyze', { method: 'POST', body: JSON.stringify(body) });
-        resultDiv.innerHTML = result.analysis || 'AI 未返回解析结果';
-
-        // Add save button
-        resultDiv.insertAdjacentHTML('afterend', `
-            <div class="mt-2" id="aiAnalyzeSaveArea">
-                <button class="btn btn-outline-primary btn-sm" onclick="saveAiAnalysis(${qid})">保存解析到题目</button>
-            </div>`);
-        window._aiAnalyzeResult = result.analysis;
-    } catch(e) {
-        resultDiv.innerHTML = `<div class="text-danger">解析失败: ${e.message}</div>`;
+    var systemPrompt = '你是一位知识渊博的辅导老师。请对以下题目进行深入解析，包括：1. 考察的知识点 2. 解题思路 3. 每个选项的详细分析 4. 学习建议。请用中文回答。';
+    var userMessage = '题目类型：' + (TYPE_LABELS[question.question_type] || question.question_type) + '\n题目内容：' + question.content;
+    if (question.options && question.options.length > 0) {
+        userMessage += '\n选项：\n';
+        for (var i = 0; i < question.options.length; i++) {
+            userMessage += String.fromCharCode(65 + i) + '. ' + question.options[i] + '\n';
+        }
     }
+    userMessage += '正确答案：' + question.answer;
+    if (question.analysis) userMessage += '\n现有解析：' + question.analysis;
+
+    var result = await aiChat(systemPrompt, userMessage);
+    resultDiv.innerHTML = result || 'AI 未返回解析结果';
+
+    // Add save button
+    var oldSave = document.getElementById('aiAnalyzeSaveArea');
+    if (oldSave) oldSave.remove();
+    resultDiv.insertAdjacentHTML('afterend', '<div class="mt-2" id="aiAnalyzeSaveArea"><button class="btn btn-outline-primary btn-sm" onclick="saveAiAnalysis(' + qid + ')">保存解析到题目</button></div>');
+    window._aiAnalyzeResult = result;
 }
 
-async function saveAiAnalysis(qid) {
-    const analysis = window._aiAnalyzeResult;
+function saveAiAnalysis(qid) {
+    var analysis = window._aiAnalyzeResult;
     if (!analysis) return;
-    try {
-        const q = await api('/api/questions/' + qid);
-        q.analysis = analysis;
-        await api('/api/questions/' + qid, { method: 'PUT', body: JSON.stringify(q) });
-        showToast('解析已保存到题目');
-        document.getElementById('aiAnalyzeSaveArea')?.remove();
-    } catch(e) {
-        showToast('保存失败: ' + e.message, 'error');
+    var questions = lsGet('quiz_questions', []);
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === parseInt(qid)) {
+            questions[i].analysis = analysis;
+            break;
+        }
     }
+    lsSet('quiz_questions', questions);
+    showToast('解析已保存到题目');
+    var saveArea = document.getElementById('aiAnalyzeSaveArea');
+    if (saveArea) saveArea.remove();
 }
 
 async function doAiVariant() {
-    const qid = document.getElementById('aiVariantQuestion').value;
+    var qid = document.getElementById('aiVariantQuestion').value;
     if (!qid) { showToast('请选择原题', 'warning'); return; }
-    const config = getAiConfig();
+    var config = getAiConfig();
     if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
 
-    const resultDiv = document.getElementById('aiVariantResult');
-    const saveArea = document.getElementById('aiVariantSaveArea');
+    var questions = lsGet('quiz_questions', []);
+    var question = null;
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === parseInt(qid)) { question = questions[i]; break; }
+    }
+    if (!question) { showToast('题目未找到', 'error'); return; }
+
+    var resultDiv = document.getElementById('aiVariantResult');
+    var saveArea = document.getElementById('aiVariantSaveArea');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在生成变体题...</span></div>';
     saveArea.style.display = 'none';
 
-    try {
-        const question = await api('/api/questions/' + qid);
-        const body = {
-            ...config,
-            original_content: question.content,
-            original_answer: question.answer || '',
-            question_type: question.question_type || 'single'
-        };
-        const result = await api('/api/ai/variant', { method: 'POST', body: JSON.stringify(body) });
-        resultDiv.innerHTML = result.variant || 'AI 未返回结果';
-
-        const parsed = parseAiQuestion(result.variant, question.question_type);
-        if (parsed.content && parsed.answer) {
-            window._parsedVariant = parsed;
-            window._variantCatId = question.category_id;
-            saveArea.style.display = 'block';
-            saveArea.innerHTML = `
-                <div class="card bg-light p-3 mt-2">
-                    <strong>解析结果:</strong><br>
-                    题干: ${parsed.content}<br>
-                    选项: ${(parsed.options || []).join(', ') || '无'}<br>
-                    答案: ${parsed.answer}<br>
-                    解析: ${parsed.analysis || '无'}
-                </div>
-                <button class="btn btn-success btn-sm mt-2" onclick="saveParsedVariant()">保存为题目</button>`;
-        } else {
-            saveArea.style.display = 'block';
-            saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
+    var systemPrompt = '你是一位出题专家。请根据以下题目，生成一道同类型、同知识点但内容不同的变体题。请严格按照以下格式输出：\n题干：[题目内容]\n选项：[A. xxx  B. xxx  C. xxx  D. xxx]\n答案：[正确答案]\n解析：[题目解析]\n请用中文回答。';
+    var userMessage = '原题类型：' + (TYPE_LABELS[question.question_type] || question.question_type) + '\n原题内容：' + question.content;
+    if (question.options && question.options.length > 0) {
+        userMessage += '\n原题选项：\n';
+        for (var i = 0; i < question.options.length; i++) {
+            userMessage += String.fromCharCode(65 + i) + '. ' + question.options[i] + '\n';
         }
-    } catch(e) {
-        resultDiv.innerHTML = `<div class="text-danger">生成失败: ${e.message}</div>`;
+    }
+    userMessage += '原题答案：' + question.answer;
+    if (question.analysis) userMessage += '\n原题解析：' + question.analysis;
+
+    var result = await aiChat(systemPrompt, userMessage);
+    resultDiv.innerHTML = result || 'AI 未返回结果';
+
+    var parsed = parseAiQuestion(result, question.question_type);
+    if (parsed.content && parsed.answer) {
+        window._parsedVariant = parsed;
+        window._variantCatId = question.category_id;
+        saveArea.style.display = 'block';
+        saveArea.innerHTML = '<div class="card bg-light p-3 mt-2"><strong>解析结果:</strong><br>题干: ' + parsed.content + '<br>选项: ' + ((parsed.options || []).join(', ') || '无') + '<br>答案: ' + parsed.answer + '<br>解析: ' + (parsed.analysis || '无') + '</div><button class="btn btn-success btn-sm mt-2" onclick="saveParsedVariant()">保存为题目</button>';
+    } else {
+        saveArea.style.display = 'block';
+        saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
     }
 }
 
-async function saveParsedVariant() {
-    const parsed = window._parsedVariant;
+function saveParsedVariant() {
+    var parsed = window._parsedVariant;
     if (!parsed) return;
-    try {
-        const body = {
-            category_id: window._variantCatId || 0,
-            question_type: parsed.question_type || 'single',
-            content: parsed.content,
-            options: parsed.options || [],
-            answer: parsed.answer,
-            analysis: parsed.analysis || '',
-            difficulty: 3,
-            source: 'ai_variant'
-        };
-        await api('/api/questions', { method: 'POST', body: JSON.stringify(body) });
-        showToast('变体题已保存');
-        document.getElementById('aiVariantSaveArea').style.display = 'none';
-    } catch(e) {
-        showToast('保存失败: ' + e.message, 'error');
-    }
+    var questions = lsGet('quiz_questions', []);
+    questions.push({
+        id: Date.now(),
+        category_id: window._variantCatId || 0,
+        question_type: parsed.question_type || 'single',
+        content: parsed.content,
+        options: parsed.options || [],
+        answer: parsed.answer,
+        analysis: parsed.analysis || '',
+        difficulty: 3,
+        source: 'ai_variant',
+        created_at: new Date().toISOString()
+    });
+    lsSet('quiz_questions', questions);
+    showToast('变体题已保存');
+    document.getElementById('aiVariantSaveArea').style.display = 'none';
 }
 
 async function doAiGenerate() {
-    const topic = document.getElementById('aiGenTopic').value.trim();
-    const type = document.getElementById('aiGenType').value;
-    const difficulty = parseInt(document.getElementById('aiGenDifficulty').value) || 3;
+    var topic = document.getElementById('aiGenTopic').value.trim();
+    var type = document.getElementById('aiGenType').value;
+    var difficulty = parseInt(document.getElementById('aiGenDifficulty').value) || 3;
     if (!topic) { showToast('请输入知识点/主题', 'warning'); return; }
 
-    const config = getAiConfig();
+    var config = getAiConfig();
     if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
 
-    const resultDiv = document.getElementById('aiGenResult');
-    const saveArea = document.getElementById('aiGenSaveArea');
+    var resultDiv = document.getElementById('aiGenResult');
+    var saveArea = document.getElementById('aiGenSaveArea');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在出题...</span></div>';
     saveArea.style.display = 'none';
 
-    try {
-        const body = { ...config, topic, question_type: type, difficulty };
-        const result = await api('/api/ai/generate', { method: 'POST', body: JSON.stringify(body) });
-        resultDiv.innerHTML = result.question || 'AI 未返回结果';
+    var difficultyText = ['', '非常简单', '简单', '中等', '较难', '非常难'][difficulty] || '中等';
+    var systemPrompt = '你是一位出题专家。请根据指定的知识点、题型和难度生成一道题目。请严格按照以下格式输出：\n题干：[题目内容]\n选项：[A. xxx  B. xxx  C. xxx  D. xxx]（如果是判断题型，选项为对/错；如果是填空或简答题型，不需要选项）\n答案：[正确答案]\n解析：[详细解析]\n请用中文回答。';
+    var userMessage = '知识点：' + topic + '\n题型：' + (TYPE_LABELS[type] || type) + '\n难度：' + difficultyText;
 
-        const parsed = parseAiQuestion(result.question, type);
-        if (parsed.content && parsed.answer) {
-            window._parsedGenerated = parsed;
-            saveArea.style.display = 'block';
-            saveArea.innerHTML = `
-                <div class="card bg-light p-3 mt-2"><strong>解析结果:</strong><br>
-                题干: ${parsed.content}<br>
-                选项: ${(parsed.options || []).join(', ') || '无'}<br>
-                答案: ${parsed.answer}<br>
-                解析: ${parsed.analysis || '无'}
-                </div>
-                <button class="btn btn-success btn-sm mt-2" onclick="saveParsedGenerated()">保存为题目</button>`;
-        } else {
-            saveArea.style.display = 'block';
-            saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
-        }
-    } catch(e) {
-        resultDiv.innerHTML = `<div class="text-danger">生成失败: ${e.message}</div>`;
+    var result = await aiChat(systemPrompt, userMessage);
+    resultDiv.innerHTML = result || 'AI 未返回结果';
+
+    var parsed = parseAiQuestion(result, type);
+    if (parsed.content && parsed.answer) {
+        window._parsedGenerated = parsed;
+        window._genDifficulty = difficulty;
+        saveArea.style.display = 'block';
+        saveArea.innerHTML = '<div class="card bg-light p-3 mt-2"><strong>解析结果:</strong><br>题干: ' + parsed.content + '<br>选项: ' + ((parsed.options || []).join(', ') || '无') + '<br>答案: ' + parsed.answer + '<br>解析: ' + (parsed.analysis || '无') + '</div><button class="btn btn-success btn-sm mt-2" onclick="saveParsedGenerated()">保存为题目</button>';
+    } else {
+        saveArea.style.display = 'block';
+        saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
     }
 }
 
-async function saveParsedGenerated() {
-    const parsed = window._parsedGenerated;
+function saveParsedGenerated() {
+    var parsed = window._parsedGenerated;
     if (!parsed) return;
-    try {
-        const body = {
-            category_id: 0,
-            question_type: parsed.question_type || 'single',
-            content: parsed.content,
-            options: parsed.options || [],
-            answer: parsed.answer,
-            analysis: parsed.analysis || '',
-            difficulty: parseInt(document.getElementById('aiGenDifficulty').value) || 3,
-            source: 'ai_generated'
-        };
-        const catName = 'AI生成题目';
-        body.category_name = catName;
-        await api('/api/questions/import', { method: 'POST', body: JSON.stringify({
-            category_name: catName,
-            questions: [body],
-            source: 'ai_generated'
-        })});
-        showToast('题目已保存（分类: AI生成题目）');
-        document.getElementById('aiGenSaveArea').style.display = 'none';
-    } catch(e) {
-        showToast('保存失败: ' + e.message, 'error');
+
+    // Ensure category exists - use "AI生成题目" or create it
+    refreshCategories();
+    var aiCat = null;
+    for (var i = 0; i < categoriesCache.length; i++) {
+        if (categoriesCache[i].name === 'AI生成题目') { aiCat = categoriesCache[i]; break; }
     }
+    if (!aiCat) {
+        aiCat = { id: Date.now(), name: 'AI生成题目', description: 'AI自动生成的题目', created_at: new Date().toISOString() };
+        categoriesCache.push(aiCat);
+        lsSet('quiz_categories', categoriesCache);
+    }
+
+    var questions = lsGet('quiz_questions', []);
+    questions.push({
+        id: Date.now(),
+        category_id: aiCat.id,
+        question_type: parsed.question_type || 'single',
+        content: parsed.content,
+        options: parsed.options || [],
+        answer: parsed.answer,
+        analysis: parsed.analysis || '',
+        difficulty: window._genDifficulty || 3,
+        source: 'ai_generated',
+        created_at: new Date().toISOString()
+    });
+    lsSet('quiz_questions', questions);
+    showToast('题目已保存（分类: AI生成题目）');
+    document.getElementById('aiGenSaveArea').style.display = 'none';
 }
 
 // ============================================================
 // Tab 7: Stats
 // ============================================================
-let statsChart = null;
+var statsChart = null;
 
-async function loadStats() {
-    await refreshCategories();
+function loadStats() {
+    refreshCategories();
+    var questions = lsGet('quiz_questions', []);
+    var records = lsGet('quiz_records', []);
 
-    // Load stats
-    const cardsContainer = document.getElementById('statsCategoryCards');
-    showLoading(cardsContainer);
+    var cardsContainer = document.getElementById('statsCategoryCards');
 
-    try {
-        const data = await api('/api/stats');
-        const stats = data.stats || [];
-
-        if (stats.length === 0) {
-            showEmpty(cardsContainer, '暂无统计数据，请先刷题');
-            document.getElementById('statsHistory').innerHTML = '<div class="empty-state"><p>暂无刷题记录</p></div>';
-            document.getElementById('statsSummary').innerHTML = '';
-            destroyChart();
-            return;
-        }
-
-        // Category stat cards
-        let cardsHtml = '';
-        for (const s of stats) {
-            const accPct = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
-            cardsHtml += `<div class="col-md-4 col-lg-3"><div class="card card-stat p-3">
-                <div class="fw-bold small">${s.category_name}</div>
-                <div class="d-flex justify-content-between mt-2">
-                    <div><div class="stat-value text-primary" style="font-size:1.2rem">${s.total_questions}</div><div class="stat-label" style="font-size:0.7rem">总题数</div></div>
-                    <div><div class="stat-value text-info" style="font-size:1.2rem">${s.completed}</div><div class="stat-label" style="font-size:0.7rem">练习次数</div></div>
-                    <div><div class="stat-value text-success" style="font-size:1.2rem">${accPct}%</div><div class="stat-label" style="font-size:0.7rem">正确率</div></div>
-                </div>
-            </div></div>`;
-        }
-        cardsContainer.innerHTML = cardsHtml;
-
-        // Chart
-        const labels = stats.map(s => s.category_name);
-        const accuracies = stats.map(s => s.completed > 0 ? Math.round(s.accuracy * 100) : 0);
-        const totals = stats.map(s => s.total_questions);
-        renderChart(labels, accuracies, totals);
-
-        // Quiz history
-        await loadStatsHistory();
-
-        // Summary
-        const totalQ = stats.reduce((a,s) => a + s.total_questions, 0);
-        const totalDone = stats.reduce((a,s) => a + s.completed, 0);
-        let totalAcc = 0, nAcc = 0;
-        stats.forEach(s => { if (s.completed > 0) { totalAcc += s.accuracy; nAcc++; } });
-        const avgAcc = nAcc > 0 ? Math.round(totalAcc / nAcc * 100) : 0;
-        document.getElementById('statsSummary').innerHTML = `
-            <div class="alert alert-info py-2 mb-0"><strong>总计:</strong> ${totalQ} 道题目 | ${totalDone} 次练习 | 平均正确率 ${avgAcc}%</div>`;
-    } catch(e) {
-        showError(cardsContainer, '加载统计失败: ' + e.message);
+    if (records.length === 0 && questions.length === 0) {
+        showEmpty(cardsContainer, '暂无统计数据，请先刷题');
+        document.getElementById('statsHistory').innerHTML = '<div class="empty-state"><p>暂无刷题记录</p></div>';
+        document.getElementById('statsSummary').innerHTML = '';
+        destroyChart();
+        return;
     }
+
+    // Compute per-category stats
+    var catStatsMap = {};
+    for (var i = 0; i < categoriesCache.length; i++) {
+        catStatsMap[categoriesCache[i].id] = {
+            category_name: categoriesCache[i].name,
+            total_questions: 0,
+            completed: 0,
+            total_correct: 0,
+            total_attempts: 0,
+            accuracy: 0
+        };
+    }
+
+    for (var i = 0; i < questions.length; i++) {
+        var cid = questions[i].category_id;
+        if (catStatsMap[cid]) catStatsMap[cid].total_questions++;
+    }
+
+    for (var i = 0; i < records.length; i++) {
+        var rcid = records[i].category_id;
+        if (catStatsMap[rcid]) {
+            catStatsMap[rcid].completed++;
+            catStatsMap[rcid].total_correct += records[i].correct || 0;
+            catStatsMap[rcid].total_attempts += records[i].total || 0;
+        }
+    }
+
+    for (var k in catStatsMap) {
+        var cs = catStatsMap[k];
+        cs.accuracy = cs.total_attempts > 0 ? Math.round(cs.total_correct / cs.total_attempts * 100) : 0;
+    }
+
+    var statsArray = [];
+    for (var k in catStatsMap) statsArray.push(catStatsMap[k]);
+
+    // Category stat cards
+    var cardsHtml = '';
+    for (var i = 0; i < statsArray.length; i++) {
+        var s = statsArray[i];
+        cardsHtml += '<div class="col-md-4 col-lg-3"><div class="card card-stat p-3"><div class="fw-bold small">' + s.category_name + '</div><div class="d-flex justify-content-between mt-2"><div><div class="stat-value text-primary" style="font-size:1.2rem">' + s.total_questions + '</div><div class="stat-label" style="font-size:0.7rem">总题数</div></div><div><div class="stat-value text-info" style="font-size:1.2rem">' + s.completed + '</div><div class="stat-label" style="font-size:0.7rem">练习次数</div></div><div><div class="stat-value text-success" style="font-size:1.2rem">' + s.accuracy + '%</div><div class="stat-label" style="font-size:0.7rem">正确率</div></div></div></div></div>';
+    }
+    cardsContainer.innerHTML = cardsHtml || '<div class="col-12"><div class="empty-state"><p>暂无分类统计</p></div></div>';
+
+    // Chart
+    var labels = statsArray.map(function(s) { return s.category_name; });
+    var accuracies = statsArray.map(function(s) { return s.accuracy; });
+    renderChart(labels, accuracies);
+
+    // History
+    loadStatsHistory(records);
+
+    // Summary
+    var totalQ = questions.length;
+    var totalDone = 0, totalCorrectAll = 0, totalAttemptsAll = 0;
+    for (var i = 0; i < records.length; i++) {
+        totalDone++;
+        totalCorrectAll += records[i].correct || 0;
+        totalAttemptsAll += records[i].total || 0;
+    }
+    var avgAcc = totalAttemptsAll > 0 ? Math.round(totalCorrectAll / totalAttemptsAll * 100) : 0;
+    document.getElementById('statsSummary').innerHTML =
+        '<div class="alert alert-info py-2 mb-0"><strong>总计:</strong> ' + totalQ + ' 道题目 | ' + totalDone + ' 次练习 | 平均正确率 ' + avgAcc + '%</div>';
 }
 
-function renderChart(labels, accuracies, totals) {
+function renderChart(labels, accuracies) {
     destroyChart();
-    const ctx = document.getElementById('statsAccuracyChart').getContext('2d');
+    var ctx = document.getElementById('statsAccuracyChart').getContext('2d');
     statsChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -1834,8 +2039,8 @@ function renderChart(labels, accuracies, totals) {
             datasets: [{
                 label: '正确率 (%)',
                 data: accuracies,
-                backgroundColor: accuracies.map(a => a >= 80 ? 'rgba(25,135,84,0.7)' : a >= 60 ? 'rgba(255,193,7,0.7)' : 'rgba(220,53,69,0.7)'),
-                borderColor: accuracies.map(a => a >= 80 ? '#198754' : a >= 60 ? '#ffc107' : '#dc3545'),
+                backgroundColor: accuracies.map(function(a) { return a >= 80 ? 'rgba(25,135,84,0.7)' : a >= 60 ? 'rgba(255,193,7,0.7)' : 'rgba(220,53,69,0.7)'; }),
+                borderColor: accuracies.map(function(a) { return a >= 80 ? '#198754' : a >= 60 ? '#ffc107' : '#dc3545'; }),
                 borderWidth: 1,
                 borderRadius: 6
             }]
@@ -1851,7 +2056,7 @@ function renderChart(labels, accuracies, totals) {
                 }
             },
             scales: {
-                y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, title: { display: true, text: '正确率' } },
+                y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } }, title: { display: true, text: '正确率' } },
                 x: { title: { display: true, text: '分类' } }
             }
         }
@@ -1862,45 +2067,71 @@ function destroyChart() {
     if (statsChart) { statsChart.destroy(); statsChart = null; }
 }
 
-async function loadStatsHistory() {
-    const historyDiv = document.getElementById('statsHistory');
-    showLoading(historyDiv);
+function loadStatsHistory(records) {
+    var historyDiv = document.getElementById('statsHistory');
 
-    try {
-        if (categoriesCache.length === 0) { showEmpty(historyDiv, '暂无分类数据'); return; }
-
-        // Show per-category stats as practice history
-        const data = await api('/api/stats');
-        const stats = data.stats || [];
-
-        if (stats.length === 0) {
-            showEmpty(historyDiv, '暂无刷题记录');
-            return;
-        }
-
-        let html = '';
-        for (const s of stats) {
-            const accPct = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
-            const color = accPct >= 80 ? 'success' : accPct >= 60 ? 'warning' : 'danger';
-            html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                <div><strong>${s.category_name}</strong><br><small class="text-muted">练习 ${s.completed} 次 | ${s.total_questions} 题</small></div>
-                <div><span class="badge bg-${color} fs-6">${accPct}%</span></div>
-            </div>`;
-        }
-        historyDiv.innerHTML = html;
-    } catch(e) {
-        showError(historyDiv, '加载历史失败: ' + e.message);
+    if (records.length === 0) {
+        showEmpty(historyDiv, '暂无刷题记录');
+        return;
     }
+
+    // Show latest 20 records
+    var recent = records.slice().reverse().slice(0, 20);
+    var html = '';
+    for (var i = 0; i < recent.length; i++) {
+        var r = recent[i];
+        var scoreColor = r.score >= 80 ? 'success' : r.score >= 60 ? 'warning' : 'danger';
+        var modeLabel = MODE_LABELS[r.mode] || r.mode;
+        var dateStr = r.created_at ? r.created_at.substring(0, 10) : '';
+        html += '<div class="d-flex justify-content-between align-items-center py-2 border-bottom"><div><strong>' + (r.category_name || '全部分类') + '</strong><br><small class="text-muted">' + modeLabel + ' | ' + r.total + '题 | ' + dateStr + '</small></div><div><span class="badge bg-' + scoreColor + ' fs-6">' + r.score + '%</span> <small class="text-muted">' + r.correct + '/' + r.total + '</small></div></div>';
+    }
+    if (records.length > 20) {
+        html += '<div class="text-center text-muted small mt-2">... 还有 ' + (records.length - 20) + ' 条记录</div>';
+    }
+    historyDiv.innerHTML = html;
+}
+
+// ============================================================
+// Auto-population on First Load
+// ============================================================
+function autoPopulate() {
+    var cats = lsGet('quiz_categories', null);
+    if (cats !== null && cats.length > 0) return; // Already populated
+
+    // Create default category
+    var catId = Date.now();
+    lsSet('quiz_categories', [
+        { id: catId, name: '入党积极分子考试', description: '入党积极分子考试题库', created_at: new Date().toISOString() }
+    ]);
+
+    // Populate questions
+    var questions = [];
+    var now = new Date().toISOString();
+    for (var i = 0; i < SAMPLE_QUESTIONS.length; i++) {
+        var q = SAMPLE_QUESTIONS[i];
+        questions.push({
+            id: catId + i + 1,
+            category_id: catId,
+            question_type: q.question_type,
+            content: q.content,
+            options: q.options,
+            answer: q.answer,
+            analysis: q.analysis,
+            difficulty: q.difficulty,
+            source: q.source,
+            created_at: now
+        });
+    }
+    lsSet('quiz_questions', questions);
 }
 
 // ============================================================
 // Initialization
 // ============================================================
-async function init() {
+function init() {
+    autoPopulate();
     document.getElementById('tab-dashboard').classList.add('show', 'active');
-    try {
-        await refreshCategories();
-    } catch(e) {}
+    refreshCategories();
     loadDashboard();
     loadQuizSetup();
     loadImportTab();
