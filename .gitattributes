@@ -1,0 +1,7 @@
+# Third-party C libraries — exclude from GitHub language stats
+lib/sqlite3.c linguist-vendored
+lib/sqlite3.h linguist-vendored
+lib/curl/* linguist-vendored
+lib/httplib.h linguist-vendored
+lib/json.hpp linguist-vendored
+lib/libcurl.dll.a linguist-vendored
