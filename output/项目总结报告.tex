@@ -1,0 +1,459 @@
+% !TeX program = xelatex
+\documentclass[12pt,a4paper]{ctexart}
+
+% ── Page setup ──
+\usepackage[left=2.5cm,right=2.5cm,top=2.8cm,bottom=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{fontawesome5}
+\usepackage{amsmath,amssymb}
+
+\tcbuselibrary{listings,skins,breakable}
+
+% ── Code style ──
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!5},
+    keywordstyle=\color{blue!70}\bfseries,
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{orange!70!black},
+    showstringspaces=false,
+    tabsize=2,
+    language=C++,
+}
+
+% ── Theme colors ──
+\definecolor{primary}{HTML}{0d6efd}
+\definecolor{danger}{HTML}{dc3545}
+\definecolor{success}{HTML}{198754}
+\definecolor{warning}{HTML}{ffc107}
+
+% ── Custom boxes ──
+\newtcolorbox{dialogbox}[1][]{
+    colback=blue!3, colframe=primary!40, left=6pt, right=6pt, top=8pt, bottom=8pt,
+    breakable, fontupper=\small, #1
+}
+\newtcolorbox{algobox}[1][]{
+    colback=green!3, colframe=success!60, left=6pt, right=6pt, top=8pt, bottom=8pt,
+    breakable, fontupper=\small, title=核心算法, #1
+}
+\newtcolorbox{dsbox}[1][]{
+    colback=orange!3, colframe=warning!60, left=6pt, right=6pt, top=8pt, bottom=8pt,
+    breakable, fontupper=\small, title=数据结构与算法应用, #1
+}
+
+% ── Headers / Footers ──
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray} 智能题库刷题助手 · 项目总结报告}
+\fancyhead[R]{\small\color{gray} C++数据结构与算法结课作业}
+\fancyfoot[C]{\thepage}
+
+\title{
+    \vspace{4cm}
+    {\Huge\bfseries 智能题库刷题助手}\\[0.8cm]
+    {\Large 项目总结报告}\\[1.5cm]
+    {\large C++ 数据结构与算法编程·结课作业}\\[0.5cm]
+    {\large 计算机与信息技术学院 · 大一}\\[0.5cm]
+    {\large 2026年6月}
+}
+\author{陈彦邹}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+
+\newpage
+
+% ============================================================
+\section{项目概述}
+
+\subsection{项目背景}
+本项目是为\textbf{C++数据结构与算法编程}课程开发的结课项目——一个完整的智能题库刷题系统。系统基于\textbf{C++17}开发高性能HTTP服务端，结合单文件HTML前端，支持多模式刷题、错题管理、AI智能辅助等功能。
+
+学生在日常学习中面临题库管理混乱、刷题效率低下、错题难以追踪等痛点。本项目通过编程方式系统性地解决了这些问题。
+
+\subsection{技术选型}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{层级}   & \textbf{技术}              & \textbf{说明}             \\ \hline
+后端服务        & C++17 + cpp-httplib       & ~860行，18个REST API端点   \\ \hline
+数据库          & SQLite3 (amalgamation)    & C++ RAII封装，预编译语句   \\ \hline
+AI服务          & libcurl + nlohmann/json   & RAII句柄管理，多厂商兼容   \\ \hline
+前端            & Bootstrap 5 + Chart.js    & 单文件SPA，2144行          \\ \hline
+文档            & \LaTeX{} / Markdown       & 设计文档 + 本报告          \\ \hline
+\end{tabular}
+\caption{技术选型总览}
+\end{table}
+
+\subsection{项目规模}
+
+\begin{itemize}[nosep]
+    \item \textbf{C++ 源码}：~2,100 行（quiz\_server.cpp, database.cpp, ai\_service.cpp）
+    \item \textbf{HTML 前端}：~2,150 行（单文件SPA，7个功能页面）
+    \item \textbf{API 端点}：18 个 RESTful 接口
+    \item \textbf{数据库表}：4 张（categories, questions, user\_records, wrong\_questions）
+    \item \textbf{示例题库}：80 道入党积极分子考试真题
+    \item \textbf{Git提交}：10+ 次，迭代开发
+\end{itemize}
+
+\newpage
+
+% ============================================================
+\section{AI 迭代对话记录}
+
+以下是开发过程中与 Claude AI 的关键对话摘录（按时间顺序）。
+
+\subsection{需求分析与架构设计}
+
+\begin{dialogbox}[title=对话1: 确定技术方案]
+\textbf{用户:} 阅读项目.md完成项目开发，最后上传到GitHub让人可以在公网访问\\
+\textit{（要求用纯C++开发，不要C语言，不需要Python，提供一个题库，项目支持前后端，最后整合到一个.html文件）}\\[4pt]
+\textbf{Claude:} 提出三种架构方案：\\
+\textbf{A（推荐）} C++后端 + 单文件.html前端，本地运行服务，浏览器打开即用\\
+\textbf{B} 纯前端JS + localStorage，不需要后端\\
+\textbf{C} C++编译为WebAssembly嵌入HTML\\[4pt]
+\textbf{用户选择:} A\\[4pt]
+\textbf{决策:} 采用 C++17 + cpp-httplib + SQLite3 架构，前端 Bootstrap 5 单文件SPA
+\end{dialogbox}
+
+\vspace{6pt}
+
+\begin{dialogbox}[title=对话2: 需求细化]
+\textbf{Claude:} AI功能在C++中如何实现？（方案A保留完整/AI降级/暂时砍掉）\\
+\textbf{用户选择:} A — 保留完整的AI功能\\[4pt]
+\textbf{Claude:} 题库PDF/DOCX解析方案选择\\
+\textbf{用户选择:} A — 预转为JSON/TXT格式导入\\[4pt]
+\textbf{结论:} AI用libcurl对接OpenAI兼容API；题库JSON格式导入，PDF不直解
+\end{dialogbox}
+
+\vspace{6pt}
+
+\begin{dialogbox}[title=对话3: 设计确认]
+\textbf{Claude (呈现完整设计):} 目录结构、API路由、数据库schema、前端页面规划\\
+\textbf{用户:} 「可以，记得同时修改.md」\\[4pt]
+\textbf{决策:} 设计通过，启动分任务代理执行
+\end{dialogbox}
+
+\subsection{开发过程中的代码审查与修复}
+
+\begin{dialogbox}[title=对话4: 数据库层代码审查发现Bug并修复]
+\textbf{代码审查发现的问题:}\\
+1. \texttt{bindText} 函数把空字符串转成 NULL，覆盖列默认值\\
+2. 错题表缺少 UNIQUE 约束，UPSERT 不是原子操作（SELECT+INSERT竞态）\\
+3. \texttt{answersMatch} 中迭代器跨容器比较 — \textbf{未定义行为(UB)}\\[4pt]
+\textbf{修复:}\\
+\ding{182} 移除 bindText 空串→NULL 转换\\
+\ding{182} 添加 ON CONFLICT(question\_id) DO UPDATE SET 原生 UPSERT\\
+\ding{182} 将 trim 结果绑定为具名变量，消除 UB
+\end{dialogbox}
+
+\vspace{6pt}
+
+\begin{dialogbox}[title=对话5: 编译修复 — 解决 Windows 环境问题]
+\textbf{编译问题:}\\
+1. CMake找不到 libcurl 开发包\\
+2. httplib.h 中 CreateFile2 在 MinGW 未声明\\
+3. 端口8080被旧Python服务占用\\[4pt]
+\textbf{解决:}\\
+\ding{182} 从CDN下载curl头文件 + 用gendef/dlltool生成导入库\\
+\ding{182} CreateFile2 → CreateFileW 适配 MinGW API\\
+\ding{182} taskkill 关闭旧进程，释放端口
+\end{dialogbox}
+
+\vspace{6pt}
+
+\begin{dialogbox}[title=对话6: 公网部署问题排查]
+\textbf{问题:} GitHub Pages返回404\\
+\textbf{排查过程:}\\
+1. 检查仓库→正常\\
+2. 检查Pages设置→正确\\
+3. 发现：仓库是Private，GitHub Pages需公开仓库（免费版）\\
+\textbf{解决:} 改仓库为Public → 重新配置Pages → 部署成功\\[4pt]
+\textbf{最终成果:} \url{https://chenyanzou.github.io/quiz-assistant/}
+\end{dialogbox}
+
+\vspace{6pt}
+
+\begin{dialogbox}[title=对话7: C++现代化重构]
+\textbf{用户:} 「优化一下代码用C++替换不要用C语言」\\
+\textbf{重构内容:}
+\begin{itemize}[nosep]
+    \item \texttt{char*} 手动释放 → \texttt{std::unique\_ptr} RAII
+    \item \texttt{static} 文件级函数 → 匿名 namespace
+    \item CURL句柄手动管理 → CurlHandle / CurlSlistGuard RAII 类
+    \item \texttt{reinterpret\_cast} → \texttt{static\_cast}
+    \item \texttt{const char*} → \texttt{std::string\_view}
+    \item 函数声明 → 尾置返回类型（C++11/17风格）
+    \item 未使用 include 清理
+\end{itemize}
+\end{dialogbox}
+
+\newpage
+
+% ============================================================
+\section{核心算法分析}
+
+\subsection{HTTP 路由分发算法}
+
+\begin{algobox}
+\textbf{实现文件:} \texttt{quiz\_server.cpp}（cpp-httplib 框架内置）\\[4pt]
+cpp-httplib使用\textbf{正则匹配}进行路由分发：
+
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+// 精确匹配
+svr.Get("/api/categories", handler);
+// 正则捕获匹配 (R"(...)" 为C++11原始字符串)
+svr.Delete(R"(/api/categories/(\d+))", handler);
+svr.Put(R"(/api/wrong/(\d+)/review)", handler);
+\end{lstlisting}
+
+\textbf{算法:} 遍历已注册路由表，对每个路由用 \texttt{std::regex\_match} 匹配请求路径。
+时间复杂度 $O(n \cdot m)$，$n$ 为路由数量，$m$ 为每个正则的匹配时间。\\
+\textbf{优化:} 对 GET/POST 等方法分表存储，减少匹配范围。
+\end{algobox}
+
+\subsection{题目随机打乱算法（Fisher-Yates Shuffle）}
+
+\begin{algobox}
+\textbf{实现文件:} \texttt{quiz\_server.cpp:466-470}\\[4pt]
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+// Fisher-Yates 洗牌算法
+std::random_device rd;          // 真随机种子
+std::mt19937 g(rd());           // Mersenne Twister 19937 伪随机数生成器
+std::shuffle(questions.begin(), questions.end(), g);
+\end{lstlisting}
+
+\textbf{时间复杂度:} $O(n)$\\
+\textbf{空间复杂度:} $O(1)$（原地打乱）\\[4pt]
+\textbf{为什么不用 \texttt{rand()}:} C标准库 \texttt{rand()} 周期短（$2^{31}$），
+分布不均匀。C++17的 \texttt{std::mt19937} 是业界标准的梅森旋转算法，周期高达
+$2^{19937}-1$，保证了题目的真正随机性。
+\end{algobox}
+
+\subsection{答案比对算法（大小写不敏感 + 去空白）}
+
+\begin{algobox}
+\textbf{实现文件:} \texttt{quiz\_server.cpp:48-55}\\[4pt]
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+[[nodiscard]] auto trim(std::string_view s) -> std::string {
+    auto start = s.find_first_not_of(" \t\n\r");
+    if (start == std::string_view::npos) return {};
+    auto end = s.find_last_not_of(" \t\n\r");
+    return std::string{s.substr(start, end - start + 1)};
+}
+// 使用 std::equal 四迭代器版本 + lambda 比较器
+return std::equal(tu.begin(), tu.end(), tc.begin(), tc.end(),
+    [](char a, char b) {
+        return std::tolower(static_cast<unsigned char>(a))
+            == std::tolower(static_cast<unsigned char>(b));
+    });
+\end{lstlisting}
+
+\textbf{时间复杂度:} $O(n)$，$n$ 为字符串长度\\
+\textbf{设计要点:}
+\begin{itemize}[nosep]
+    \item \texttt{unsigned char} 转换避免中文等多字节字符的UB
+    \item 四迭代器版 \texttt{std::equal} 自动处理不同长度字符串
+    \item \texttt{string\_view} 避免不必要的拷贝
+\end{itemize}
+\end{algobox}
+
+\subsection{SQL动态查询构建算法}
+
+\begin{algobox}
+\textbf{实现文件:} \texttt{database.cpp:196-240}\\[4pt]
+查询构建采用\textbf{条件串联 + 参数化}模式：
+\begin{lstlisting}[language=C++,basicstyle=\ttfamily\small]
+std::string sql = "SELECT ... FROM questions WHERE 1=1";
+if (category_id.has_value()) sql += " AND category_id = ?";
+if (type.has_value())        sql += " AND question_type = ?";
+if (search.has_value())      sql += " AND content LIKE ?";
+sql += " ORDER BY id LIMIT ? OFFSET ?";
+\end{lstlisting}
+
+\textbf{关键设计:} 所有用户输入通过 \texttt{sqlite3\_bind\_*} 绑定，
+而非字符串拼接，从根本上防止SQL注入攻击。WHERE 1=1 作为锚点简化条件拼接逻辑。
+时间复杂度取决于数据库查询计划（B树索引扫描，通常 $O(\log n)$）。
+\end{algobox}
+
+\newpage
+
+% ============================================================
+\section{数据结构应用分析}
+
+\subsection{核心数据结构一览}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{数据结构}     & \textbf{应用位置}              & \textbf{作用}                  & \textbf{算法复杂度} \\ \hline
+\texttt{std::vector<T>}   & 题目列表、科目列表、JSON数组   & 动态数组，随机访问      & $O(1)$索引, $O(1)$摊销追加 \\ \hline
+\texttt{std::string}      & 题干内容、答案、解析           & 字符串存储与操作        & — \\ \hline
+\texttt{std::string\_view} & trim, answersMatch            & 零拷贝子串引用          & $O(1)$构造 \\ \hline
+\texttt{std::optional<T>} & API查询参数、数据库查询结果    & 可能缺失的值（替代NULL） & $O(1)$判断 \\ \hline
+\texttt{std::unique\_ptr<T>} & 句柄管理、资源所有权          & RAII自动释放            & $O(1)$ \\ \hline
+\texttt{std::set<int>}    & 错题去重 (quiz\_server:448)    & 红黑树，有序不重复      & $O(\log n)$插入/查找 \\ \hline
+\texttt{std::regex}       & HTTP路由匹配                  & 正则表达式模式匹配      & — \\ \hline
+\texttt{std::mt19937}     & 随机刷题                      & 梅森旋转伪随机数        & 极高周期($2^{19937}-1$) \\ \hline
+B树（SQLite隐式）   & 数据库索引                    & 快速查找、排序、聚合    & $O(\log n)$查询 \\ \hline
+Hash表（SQLite隐式）& SQL查询优化                   & JOIN加速、去重          & $O(1)$平均查找 \\ \hline
+\end{tabular}
+\caption{项目中使用的数据结构总览}
+\end{table}
+
+\subsection{课程知识点对照}
+
+\begin{dsbox}
+\textbf{与《C++数据结构与算法》课程对应:}\\[4pt]
+
+\begin{enumerate}[nosep,leftmargin=*]
+    \item \textbf{向量 (vector)} —— 第3/4章：线性表与动态数组\\
+    在整个项目中作为核心容器使用，存放题目列表、科目列表、JSON数组、API响应等。
+
+    \item \textbf{字符串与串匹配} —— 第5章：串与模式匹配\\
+    trim() 使用 \texttt{find\_first\_not\_of} 和 \texttt{find\_last\_not\_of} 进行字符集匹配；
+    SQL LIKE 查询实现模糊搜索（本质是 BFSM 模式匹配）。
+
+    \item \textbf{集合 (set) 与红黑树} —— 第8章：树与二叉树\\
+    错题重做模式中用 \texttt{std::set<int>} 去重，底层是红黑树，保证已见题目集合的有序与唯一。
+
+    \item \textbf{散列表 (Hash)} —— 第9章：查找\\
+    SQLite内部使用B树和Hash表优化索引查询、JOIN关联和GROUP BY聚合；
+    API响应构建中隐式使用 \texttt{nlohmann::json}（内部为红黑树/哈希混合）。
+
+    \item \textbf{排序算法} —— 第10章：排序\\
+    Fisher-Yates \texttt{std::shuffle} 原地随机化（$O(n)$）；SQLite ORDER BY 使用B树/B+树索引排序（$O(n \log n)$）。
+
+    \item \textbf{递归与分治} —— 第2章：递归\\
+    数据库递归查询（SQLite WITH RECURSIVE 在本项目中用于统计子查询）；
+    JSON对象树的递归解析（nlohmann/json内部实现）。
+
+    \item \textbf{资源管理 (RAII)} —— 贯穿全书\\
+    C++核心编程范式：StmtGuard、CurlHandle、CurlSlistGuard、Database 类全部基于RAII，
+    确保语句句柄、网络连接、数据库连接在作用域结束时自动释放。
+\end{enumerate}
+\end{dsbox}
+
+\newpage
+
+% ============================================================
+\section{工程能力提升总结}
+
+\subsection{AI 辅助开发的经验与反思}
+
+\subsubsection{AI 生成代码的优点}
+
+\begin{enumerate}[nosep]
+    \item \textbf{大幅提升开发速度} — AI在几分钟内生成了~2000行的C++代码骨架和完整的数据库层实现
+    \item \textbf{减少重复劳动} — 18个API路由的模板代码、SQL语句编写、JSON解析等机械性工作由AI完成
+    \item \textbf{提供多种设计方案} — 在前期讨论了3种架构方案，帮助快速决策
+    \item \textbf{擅长大规模代码生成} — 前端HTML（2144行）可基本由AI完成
+\end{enumerate}
+
+\subsubsection{AI 生成代码的局限性}
+
+\begin{enumerate}[nosep]
+    \item \textbf{存在潜在Bug} — 代码审查发现了多处问题：
+    \begin{itemize}[nosep]
+        \item \texttt{answersMatch} 中迭代器来自两个不同临时对象 → 未定义行为
+        \item \texttt{bindText} 空串→NULL 导致数据库默认值被覆盖
+        \item 错题Upsert非原子操作 → 竞态条件
+    \end{itemize}
+    \item \textbf{缺乏领域知识} — AI不了解特定平台限制（MinGW无CreateFile2、CMake编码问题、libcurl无开发包时的处理）
+    \item \textbf{需要人工验证} — 所有AI生成的代码都需要经过代码审查、编译测试、运行时测试
+    \item \textbf{架构理解受限} — AI无法完全把握全局设计意图，容易出现"只见树木不见森林"的问题
+\end{enumerate}
+
+\subsubsection{人工算法的必要性}
+
+\textbf{AI 不能替代的内容:}
+\begin{itemize}[nosep]
+    \item 根据课程要求设计符合教学目的的算法实现（如答案比对中的 trim + 大小写不敏感比较）
+    \item RAII资源管理范式的全局设计决策
+    \item 特定平台问题的调试与解决（Windows SSL、CMake路径编码）
+    \item 代码质量的审查和算法正确性的验证
+    \item 将课程理论知识（B树、红黑树、哈希表）映射到实际项目中的能力
+\end{itemize}
+
+\subsection{个人能力提升}
+
+\begin{enumerate}[nosep]
+    \item \textbf{C++ 工程化能力} — 从零搭建C++项目，理解CMake构建系统、第三方库集成、链接过程
+    \item \textbf{数据结构应用} — 将课本上的 vector、set、string\_view、optional 等知识点应用到实际项目中
+    \item \textbf{数据库设计} — 从ER模型到SQL建表、索引优化、SQL注入防护的完整实践
+    \item \textbf{RAII 设计模式} — 掌握了资源获取即初始化的核心C++编程范式
+    \item \textbf{调试能力} — 面对未定义行为(UB)、平台兼容性问题、网络端口冲突等实际问题的排查经验
+    \item \textbf{代码审查意识} — 学会了审查AI生成的代码，识别潜在Bug、安全问题和设计缺陷
+    \item \textbf{全栈开发思维} — 理解了前后端分离架构、RESTful API设计、Git版本管理、CI/CD自动部署
+    \item \textbf{文档撰写能力} — 编写规范的设计文档（Spec）、实施计划（Plan）、项目总结报告（本文）
+\end{enumerate}
+
+\newpage
+
+% ============================================================
+\section{项目总结}
+
+\subsection{完成情况}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{交付物}          & \textbf{状态} & \textbf{说明}                    \\ \hline
+C++ 后端服务              & \checkmark & ~860行，18个REST API              \\ \hline
+SQLite 数据库层           & \checkmark & 4张表，完整的CRUD+统计            \\ \hline
+AI 多厂商服务             & \checkmark & OpenAI/Kimi/DeepSeek/Qwen/GLM/Ollama \\ \hline
+HTML 单文件前端           & \checkmark & 7页面SPA，80题内嵌                \\ \hline
+GitHub 仓库               & \checkmark & chenyanzou/quiz-assistant         \\ \hline
+公网部署 (GitHub Pages)   & \checkmark & \url{https://chenyanzou.github.io/quiz-assistant/} \\ \hline
+C++ 现代化重构            & \checkmark & RAII全覆盖，纯C++17风格            \\ \hline
+设计文档                  & \checkmark & docs/superpowers/specs/            \\ \hline
+实施计划                  & \checkmark & docs/superpowers/plans/            \\ \hline
+项目总结报告              & \checkmark & 本文档                            \\ \hline
+\end{tabular}
+\caption{交付物清单}
+\end{table}
+
+\subsection{工程反思}
+
+\begin{enumerate}[nosep]
+    \item \textbf{测试先行} — 首次开发时没有编写单元测试，导致后期在编译和运行时才发现问题。后续项目应当采用TDD方式。
+    \item \textbf{依赖管理} — Windows环境下C++第三方库的获取和集成是一大痛点，CMake + vcpkg/Conan 可以改善体验。
+    \item \textbf{平台兼容性} — MinGW vs MSVC 的API差异（如CreateFile2 vs CreateFileW）提醒我们在跨平台开发时需要做好抽象层。
+    \item \textbf{安全第一} — SQL注入防护（参数化查询）、输入校验（trim、类型检查）、API密钥保护（localStorage不复传）都是本项目实际做了的安全措施。
+\end{enumerate}
+
+\subsection{致谢}
+
+感谢《C++数据结构与算法编程》课程提供的理论与实践基础，
+感谢 Claude AI 作为编码助手在开发过程中的辅助，
+让我在大一阶段就完成了一个完整的全栈C++项目。
+
+\vspace{1.5cm}
+\begin{center}
+\rule{0.5\textwidth}{0.4pt}\\[6pt]
+{\small 陈彦邹 · 2026年6月13日 · 北京}
+\end{center}
+
+\end{document}
