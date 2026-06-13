@@ -11,7 +11,6 @@ data/quiz_app.db-shm
 
 # Large data files (input PDFs to parse)
 *.pdf
-!output/*.pdf
 
 # Temp files
 *.tmp
