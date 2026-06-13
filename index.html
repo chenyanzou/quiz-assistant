@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>题库刷题系统</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --primary: #0d6efd;
+    --primary-light: #e8f0fe;
+    --success: #198754;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #0dcaf0;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-600: #6c757d;
+    --gray-800: #343a40;
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --transition: 0.2s ease;
+}
+* { box-sizing: border-box; }
+body {
+    background: #f5f7fb;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+    color: #2c3e50;
+    min-height: 100vh;
+}
+
+/* ===== Navbar ===== */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+}
+.main-nav { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: sticky; top: 0; z-index: 1020; }
+.main-nav .nav-link {
+    color: var(--gray-600);
+    font-weight: 500;
+    padding: 0.75rem 1.1rem;
+    border-radius: 8px;
+    margin: 0 2px;
+    transition: all var(--transition);
+    font-size: 0.9rem;
+}
+.main-nav .nav-link:hover { color: var(--primary); background: var(--primary-light); }
+.main-nav .nav-link.active { color: #fff; background: var(--primary); }
+.main-nav .nav-link i { margin-right: 5px; }
+
+/* ===== Cards ===== */
+.card-stat {
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: transform var(--transition), box-shadow var(--transition);
+    cursor: default;
+}
+.card-stat:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.card-stat .stat-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+}
+.card-stat .stat-value { font-size: 1.8rem; font-weight: 700; }
+.card-stat .stat-label { color: var(--gray-600); font-size: 0.85rem; }
+
+.card-category {
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: all var(--transition);
+}
+.card-category:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.card-category .category-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+.card-category .category-name { font-weight: 600; font-size: 1.05rem; }
+.card-category .category-desc { color: var(--gray-600); font-size: 0.82rem; }
+
+/* ===== Tables ===== */
+.table-container {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.table-custom { margin-bottom: 0; }
+.table-custom thead th {
+    background: var(--gray-100);
+    border-bottom: 2px solid var(--gray-200);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+.table-custom tbody td { vertical-align: middle; font-size: 0.9rem; }
+.table-custom tbody tr { transition: background var(--transition); cursor: pointer; }
+.table-custom tbody tr:hover { background: var(--primary-light); }
+
+/* ===== Badges ===== */
+.badge-type { font-size: 0.75rem; padding: 0.3em 0.65em; }
+.badge-difficulty { font-size: 0.7rem; padding: 0.2em 0.5em; border-radius: 20px; }
+
+/* ===== Quiz ===== */
+.quiz-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+.quiz-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 1rem 1.25rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: all var(--transition);
+    margin-bottom: 0.5rem;
+}
+.quiz-option:hover { border-color: var(--primary); background: var(--primary-light); }
+.quiz-option.selected { border-color: var(--primary); background: var(--primary-light); }
+.quiz-option.correct { border-color: var(--success); background: #d1e7dd; }
+.quiz-option.incorrect { border-color: var(--danger); background: #f8d7da; }
+.quiz-option.reveal-correct { border-color: var(--success); background: #d1e7dd; }
+.quiz-option input[type="radio"], .quiz-option input[type="checkbox"] { margin-right: 0.5rem; }
+
+.result-correct { color: var(--success); font-weight: 600; }
+.result-incorrect { color: var(--danger); font-weight: 600; }
+
+/* ===== AI Response ===== */
+.ai-response {
+    background: #fafbfc;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    white-space: pre-wrap;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--gray-600);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; opacity: 0.5; }
+
+/* ===== Toast ===== */
+.toast-container { z-index: 9999; }
+
+/* ===== Modal ===== */
+.modal-content { border: none; border-radius: var(--radius); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+
+/* ===== Loading ===== */
+.loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: var(--gray-600);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .main-nav .nav-link { font-size: 0.8rem; padding: 0.5rem 0.6rem; }
+    .card-stat .stat-value { font-size: 1.4rem; }
+    .quiz-card { padding: 1.25rem; }
+    .table-container { overflow-x: auto; }
+}
+
+/* ===== Misc ===== */
+.tab-content > .tab-pane { display: none; }
+.tab-content > .tab-pane.active { display: block; }
+.content-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+.clickable { cursor: pointer; }
+.fade-in { animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.section-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary);
+    display: inline-block;
+}
+.difficulty-stars { color: var(--warning); letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ===== Toast Container ===== -->
+<div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+
+<!-- ===== Navbar ===== -->
+<nav class="main-nav navbar navbar-expand-lg">
+    <div class="container">
+        <span class="navbar-brand text-primary">题库刷题系统</span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav nav nav-pills ms-auto" id="mainTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-tab="dashboard">首页</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="bank">题库管理</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="import">题库导入</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="quiz">刷题</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="wrong">错题本</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="ai">AI助手</button></li>
+                <li class="nav-item"><button class="nav-link" data-tab="stats">学习统计</button></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- ===== Main Content ===== -->
+<div class="container py-4">
+<div class="tab-content">
+
+<!-- ================================ -->
+<!-- TAB 1: Dashboard                 -->
+<!-- ================================ -->
+<div class="tab-pane fade show active" id="tab-dashboard">
+    <h5 class="section-title">概览</h5>
+    <div class="row g-3 mb-4" id="dashStats">
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-primary" id="dashTotalQuestions">-</div><div class="stat-label">总题量</div></div><div class="stat-icon bg-primary bg-opacity-10 text-primary">&#x1F4DA;</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-danger" id="dashWrongCount">-</div><div class="stat-label">错题数</div></div><div class="stat-icon bg-danger bg-opacity-10 text-danger">&#x2717;</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-success" id="dashAccuracy">-</div><div class="stat-label">近期正确率</div></div><div class="stat-icon bg-success bg-opacity-10 text-success">&#x2713;</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-info" id="dashCategories">-</div><div class="stat-label">分类数</div></div><div class="stat-icon bg-info bg-opacity-10 text-info">&#x1F4C1;</div></div></div></div>
+    </div>
+
+    <h5 class="section-title mt-3">题库分类</h5>
+    <div class="row g-3" id="dashCategoryCards">
+        <div class="col-12"><div class="loading-overlay"><div class="spinner-border text-primary"></div></div></div>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 2: Question Bank             -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-bank">
+    <!-- Filters -->
+    <div class="row g-2 mb-3 align-items-end">
+        <div class="col-md-3"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="bankFilterCat"><option value="">全部分类</option></select></div>
+        <div class="col-md-2"><label class="form-label small">题型</label><select class="form-select form-select-sm" id="bankFilterType"><option value="">全部题型</option><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
+        <div class="col-md-3"><label class="form-label small">搜索</label><input class="form-control form-control-sm" id="bankFilterSearch" placeholder="搜索题目内容..."></div>
+        <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" onclick="loadQuestionBank()">搜索</button></div>
+        <div class="col-md-2"><button class="btn btn-sm btn-success w-100" onclick="openQuestionModal()">+ 添加题目</button></div>
+    </div>
+
+    <!-- Pagination info -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small class="text-muted" id="bankPaginationInfo"></small>
+        <div class="btn-group btn-group-sm" id="bankPagination"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <table class="table table-custom">
+            <thead><tr><th style="width:60px">ID</th><th style="width:100px">分类</th><th style="width:70px">题型</th><th>题目内容</th><th style="width:70px">难度</th><th style="width:160px">操作</th></tr></thead>
+            <tbody id="bankTableBody"><tr><td colspan="6"><div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 3: Import                    -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-import">
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card card-stat p-4">
+                <h5 class="section-title">导入题库</h5>
+                <p class="text-muted small">支持导入 .json 文件，文件格式为包含题目对象数组的 JSON。</p>
+                <div class="mb-3">
+                    <label class="form-label">选择 JSON 文件</label>
+                    <input class="form-control" type="file" id="importFileInput" accept=".json" onchange="handleImportFile(event)">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">目标分类</label>
+                    <div class="row g-2">
+                        <div class="col-6"><select class="form-select form-select-sm" id="importCatSelect"><option value="">选择已有分类...</option></select></div>
+                        <div class="col-6"><input class="form-control form-control-sm" id="importCatNew" placeholder="或输入新分类名称"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">来源标记 (可选)</label>
+                    <input class="form-control form-control-sm" id="importSource" placeholder="如：入党积极分子真题">
+                </div>
+                <button class="btn btn-primary" id="importBtn" disabled onclick="doImport()">导入题目</button>
+                <div class="mt-2" id="importProgress"></div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <h6 class="mb-2">导入预览 (<span id="importPreviewCount">0</span> 道题目)</h6>
+            <div style="max-height:500px;overflow-y:auto;" id="importPreview">
+                <div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>请先选择 .json 文件</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 4: Quiz                      -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-quiz">
+    <!-- Quiz Setup -->
+    <div id="quizSetup">
+        <div class="quiz-card fade-in">
+            <h5 class="section-title">刷题设置</h5>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">刷题模式</label>
+                    <select class="form-select" id="quizMode">
+                        <option value="sequential">顺序刷题</option>
+                        <option value="random">随机刷题</option>
+                        <option value="exam">模拟考试</option>
+                        <option value="wrong_only">错题重做</option>
+                    </select>
+                </div>
+                <div class="col-md-6"><label class="form-label">选择分类</label>
+                    <select class="form-select" id="quizCategory"><option value="0">全部分类</option></select>
+                </div>
+                <div class="col-md-6"><label class="form-label">题目数量</label>
+                    <input class="form-control" type="number" id="quizCount" value="10" min="1" max="100">
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <button class="btn btn-primary btn-lg w-100" onclick="startQuiz()">开始刷题</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Active -->
+    <div id="quizActive" style="display:none;">
+        <div class="quiz-card fade-in">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold" id="quizProgressText">第 1/10 题</span>
+                <span class="fw-bold" id="quizScoreText">正确: 0 | 错误: 0</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="endQuiz()">结束刷题</button>
+            </div>
+            <div class="progress mb-3" style="height:8px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <div id="quizQuestionArea"></div>
+        </div>
+    </div>
+
+    <!-- Quiz Summary -->
+    <div id="quizSummary" style="display:none;">
+        <div class="quiz-card fade-in text-center">
+            <div style="font-size:4rem;" id="quizSummaryEmoji">&#x1F389;</div>
+            <h3 class="mb-2">刷题完成！</h3>
+            <div class="row g-3 mt-3">
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-primary" id="quizSummaryTotal">0</div><div class="stat-label">总题数</div></div></div>
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-success" id="quizSummaryCorrect">0</div><div class="stat-label">正确</div></div></div>
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-danger" id="quizSummaryWrong">0</div><div class="stat-label">错误</div></div></div>
+            </div>
+            <h4 class="mt-3" id="quizSummaryScore"></h4>
+            <button class="btn btn-primary mt-2" onclick="resetQuiz()">再来一次</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 5: Wrong Book                -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-wrong">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" id="wrongFilterCat" onchange="loadWrongBook()" style="width:auto;"><option value="0">全部分类</option></select>
+            <span class="text-muted small" id="wrongCountInfo"></span>
+        </div>
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadWrongBook()">刷新</button>
+            <button class="btn btn-sm btn-warning" onclick="redoWrongQuestions()">重做错题</button>
+        </div>
+    </div>
+    <div class="table-container">
+        <table class="table table-custom">
+            <thead><tr><th style="width:60px">ID</th><th style="width:100px">分类</th><th>题目</th><th>你的答案</th><th>正确答案</th><th style="width:70px">错误次数</th><th style="width:80px">状态</th><th style="width:120px">操作</th></tr></thead>
+            <tbody id="wrongTableBody"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div></div></td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 6: AI Assistant              -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-ai">
+    <!-- AI Sub-tabs -->
+    <ul class="nav nav-pills mb-3" id="aiSubTabs">
+        <li class="nav-item"><button class="nav-link active" data-ai-sub="config" onclick="switchAiSub('config')">AI配置</button></li>
+        <li class="nav-item"><button class="nav-link" data-ai-sub="analyze" onclick="switchAiSub('analyze')">AI解析</button></li>
+        <li class="nav-item"><button class="nav-link" data-ai-sub="variant" onclick="switchAiSub('variant')">举一反三</button></li>
+        <li class="nav-item"><button class="nav-link" data-ai-sub="generate" onclick="switchAiSub('generate')">AI出题</button></li>
+    </ul>
+
+    <!-- Sub: Config -->
+    <div id="aiSubConfig" class="ai-sub-pane">
+        <div class="card card-stat p-4 fade-in">
+            <h5 class="section-title">AI 配置</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">服务提供商</label>
+                    <select class="form-select" id="aiProvider" onchange="onAiProviderChange()">
+                        <option value="openai">OpenAI</option>
+                        <option value="kimi">Kimi (Moonshot)</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="qwen">Qwen (通义千问)</option>
+                        <option value="glm">GLM (智谱)</option>
+                        <option value="ollama">Ollama</option>
+                        <option value="custom">自定义</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">模型</label>
+                    <input class="form-control" id="aiModel" placeholder="模型名称">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">API Base URL</label>
+                    <input class="form-control" id="aiBaseUrl" placeholder="https://api.openai.com/v1">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">API Key</label>
+                    <input class="form-control" type="password" id="aiApiKey" placeholder="sk-...">
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary" onclick="saveAiConfig()">保存配置</button>
+                    <button class="btn btn-outline-secondary ms-2" onclick="testAiConnection()">测试连接</button>
+                    <span id="aiTestResult" class="ms-2 small"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sub: Analyze -->
+    <div id="aiSubAnalyze" class="ai-sub-pane" style="display:none;">
+        <div class="card card-stat p-4 fade-in">
+            <h5 class="section-title">AI 题目解析</h5>
+            <div class="mb-3">
+                <label class="form-label">选择题目</label>
+                <select class="form-select" id="aiAnalyzeQuestion"><option value="">请选择...</option></select>
+            </div>
+            <button class="btn btn-primary" onclick="doAiAnalyze()">开始解析</button>
+            <div class="mt-3 ai-response" id="aiAnalyzeResult" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Sub: Variant -->
+    <div id="aiSubVariant" class="ai-sub-pane" style="display:none;">
+        <div class="card card-stat p-4 fade-in">
+            <h5 class="section-title">举一反三</h5>
+            <p class="text-muted small">根据已有题目生成一道同类型的变体题</p>
+            <div class="mb-3">
+                <label class="form-label">选择原题</label>
+                <select class="form-select" id="aiVariantQuestion"><option value="">请选择...</option></select>
+            </div>
+            <button class="btn btn-primary" onclick="doAiVariant()">生成变体题</button>
+            <div class="mt-3 ai-response" id="aiVariantResult" style="display:none;"></div>
+            <div class="mt-2" id="aiVariantSaveArea" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Sub: Generate -->
+    <div id="aiSubGenerate" class="ai-sub-pane" style="display:none;">
+        <div class="card card-stat p-4 fade-in">
+            <h5 class="section-title">AI 出题</h5>
+            <div class="row g-3">
+                <div class="col-md-12"><label class="form-label">知识点/主题</label><input class="form-control" id="aiGenTopic" placeholder="如：中国共产党的成立"></div>
+                <div class="col-md-4"><label class="form-label">题型</label>
+                    <select class="form-select" id="aiGenType">
+                        <option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option>
+                    </select>
+                </div>
+                <div class="col-md-4"><label class="form-label">难度 (1-5)</label>
+                    <input class="form-control" type="number" id="aiGenDifficulty" value="3" min="1" max="5">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="doAiGenerate()">生成题目</button>
+                </div>
+            </div>
+            <div class="mt-3 ai-response" id="aiGenResult" style="display:none;"></div>
+            <div class="mt-2" id="aiGenSaveArea" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================ -->
+<!-- TAB 7: Stats                     -->
+<!-- ================================ -->
+<div class="tab-pane fade" id="tab-stats">
+    <h5 class="section-title">分类统计</h5>
+    <div class="row g-3 mb-4" id="statsCategoryCards">
+        <div class="col-12"><div class="loading-overlay"><div class="spinner-border text-primary"></div></div></div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card card-stat p-4">
+                <h5 class="section-title">正确率统计</h5>
+                <canvas id="statsAccuracyChart" height="250"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card card-stat p-4">
+                <h6 class="mb-3">刷题历史</h6>
+                <div id="statsHistory" style="max-height:350px;overflow-y:auto;">
+                    <div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+                </div>
+                <div class="mt-2" id="statsSummary"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /tab-content -->
+</div><!-- /container -->
+
+<!-- ===== Question Detail Modal ===== -->
+<div class="modal fade" id="questionDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">题目详情</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="questionDetailBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-outline-primary btn-sm" id="detailEditBtn">编辑</button>
+            <button class="btn btn-outline-danger btn-sm" id="detailDeleteBtn">删除</button>
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">关闭</button>
+        </div>
+    </div></div>
+</div>
+
+<!-- ===== Question Edit Modal ===== -->
+<div class="modal fade" id="questionEditModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="questionEditTitle">添加题目</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="qeId">
+            <div class="row g-2 mb-2">
+                <div class="col-md-6"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="qeCategory"></select></div>
+                <div class="col-md-3"><label class="form-label small">题型</label>
+                    <select class="form-select form-select-sm" id="qeType" onchange="onQeTypeChange()">
+                        <option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option>
+                    </select>
+                </div>
+                <div class="col-md-3"><label class="form-label small">难度</label>
+                    <select class="form-select form-select-sm" id="qeDifficulty">
+                        <option value="1">1星</option><option value="2">2星</option><option value="3" selected>3星</option><option value="4">4星</option><option value="5">5星</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-2"><label class="form-label small">题目内容 <span class="text-danger">*</span></label><textarea class="form-control form-control-sm" id="qeContent" rows="3" placeholder="输入题目内容..."></textarea></div>
+            <div class="mb-2" id="qeOptionsGroup"><label class="form-label small">选项 (一行一个，如 A. 选项内容)</label><textarea class="form-control form-control-sm" id="qeOptions" rows="4" placeholder="A. 选项A&#10;B. 选项B&#10;C. 选项C&#10;D. 选项D"></textarea></div>
+            <div class="row g-2 mb-2">
+                <div class="col-md-6"><label class="form-label small">正确答案 <span class="text-danger">*</span></label><input class="form-control form-control-sm" id="qeAnswer" placeholder="如：A 或 ABC 或 对 或 答案文本"></div>
+                <div class="col-md-6"><label class="form-label small">来源</label><input class="form-control form-control-sm" id="qeSource" placeholder="如：manual"></div>
+            </div>
+            <div class="mb-2"><label class="form-label small">解析</label><textarea class="form-control form-control-sm" id="qeAnalysis" rows="3" placeholder="题目解析..."></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary btn-sm" onclick="saveQuestion()">保存</button>
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+        </div>
+    </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============================================================
+// API Client
+// ============================================================
+const API_BASE = '';
+async function api(path, options = {}) {
+    const res = await fetch(API_BASE + path, {
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        ...options
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({error: res.statusText}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+}
+
+// ============================================================
+// AI Provider Defaults
+// ============================================================
+const AI_PROVIDERS = {
+    openai:   { base_url: 'https://api.openai.com/v1', model: 'gpt-3.5-turbo' },
+    kimi:     { base_url: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+    deepseek: { base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+    qwen:     { base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
+    glm:      { base_url: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-flash' },
+    ollama:   { base_url: 'http://localhost:11434/v1', model: 'llama3' },
+    custom:   { base_url: '', model: '' }
+};
+
+const TYPE_LABELS = { single: '单选', multi: '多选', judge: '判断', fill: '填空', short: '简答' };
+const MODE_LABELS = { sequential: '顺序刷题', random: '随机刷题', exam: '模拟考试', wrong_only: '错题重做' };
+
+// ============================================================
+// Utilities
+// ============================================================
+function showToast(msg, type = 'success') {
+    const bg = type === 'error' ? 'bg-danger' : type === 'warning' ? 'bg-warning' : 'bg-success';
+    const icon = type === 'error' ? '&#x2716;' : type === 'warning' ? '&#x26A0;' : '&#x2714;';
+    const id = 'toast-' + Date.now();
+    const html = `<div id="${id}" class="toast align-items-center text-white ${bg} border-0" role="alert"><div class="d-flex"><div class="toast-body">${icon} ${msg}</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+    document.getElementById('toastContainer').insertAdjacentHTML('beforeend', html);
+    const el = document.getElementById(id);
+    const toast = new bootstrap.Toast(el, { delay: 3000 });
+    toast.show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
+function showLoading(el) {
+    el.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+}
+
+function showError(el, msg) {
+    el.innerHTML = `<div class="alert alert-danger m-0">${msg}</div>`;
+}
+
+function showEmpty(el, msg) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4AD;</div><p>${msg}</p></div>`;
+}
+
+async function confirmDialog(msg) {
+    return confirm(msg);
+}
+
+function difficultyStars(n) {
+    let s = ''; for (let i=0; i<5; i++) s += i < n ? '★' : '☆'; return s;
+}
+
+function getTypeBadge(type) {
+    const colors = { single: 'primary', multi: 'info', judge: 'warning', fill: 'success', short: 'secondary' };
+    return `<span class="badge bg-${colors[type] || 'primary'} badge-type">${TYPE_LABELS[type] || type}</span>`;
+}
+
+function truncate(str, n=60) {
+    if (!str) return '';
+    return str.length > n ? str.substring(0, n) + '...' : str;
+}
+
+function parseOptions(text) {
+    if (!text || !text.trim()) return [];
+    // Try JSON parse first
+    try { const arr = JSON.parse(text); if (Array.isArray(arr)) return arr; } catch(e) {}
+    // Try line-based
+    return text.split('\n').map(s => s.trim()).filter(s => s);
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function parseAiQuestion(text, defaultType) {
+    const result = { content: '', options: [], answer: '', analysis: '', question_type: defaultType || 'single' };
+    if (!text) return result;
+    const lines = text.split('\n').map(s => s.trim()).filter(s => s);
+    let section = '';
+    for (const line of lines) {
+        const lc = line.toLowerCase();
+        if (lc.startsWith('题干') || lc.startsWith('题目')) { section = 'content'; result.content = line.replace(/^(题干|题目)[：:]\s*/i, ''); continue; }
+        if (lc.startsWith('选项')) { section = 'options'; const rest = line.replace(/^选项[：:]\s*/i, ''); if (rest) result.options.push(rest); continue; }
+        if (lc.startsWith('答案')) { section = 'answer'; result.answer = line.replace(/^答案[：:]\s*/i, ''); continue; }
+        if (lc.startsWith('解析')) { section = 'analysis'; result.analysis = line.replace(/^解析[：:]\s*/i, ''); continue; }
+        if (section === 'content') result.content += '\n' + line;
+        else if (section === 'options') result.options.push(line);
+        else if (section === 'answer') result.answer += '\n' + line;
+        else if (section === 'analysis') result.analysis += '\n' + line;
+    }
+    return result;
+}
+
+// ============================================================
+// Tab Navigation
+// ============================================================
+let currentTab = 'dashboard';
+document.querySelectorAll('#mainTabs [data-tab]').forEach(btn => {
+    btn.addEventListener('click', function() {
+        currentTab = this.dataset.tab;
+        // Update active states manually (Bootstrap handles the rest via data-bs-toggle)
+        switchTab(currentTab);
+    });
+});
+
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('show', 'active'));
+    document.getElementById('tab-' + tab).classList.add('show', 'active');
+    document.querySelectorAll('#mainTabs [data-tab]').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`#mainTabs [data-tab="${tab}"]`);
+    if (btn) btn.classList.add('active');
+
+    if (tab === 'dashboard') loadDashboard();
+    else if (tab === 'bank') loadQuestionBank();
+    else if (tab === 'import') loadImportTab();
+    else if (tab === 'quiz') loadQuizSetup();
+    else if (tab === 'wrong') loadWrongBook();
+    else if (tab === 'ai') switchAiSub('config');
+    else if (tab === 'stats') loadStats();
+}
+
+// ============================================================
+// Cached Data
+// ============================================================
+let categoriesCache = [];
+
+async function refreshCategories() {
+    try {
+        categoriesCache = await api('/api/categories');
+    } catch(e) {
+        categoriesCache = [];
+        showToast('加载分类失败: ' + e.message, 'error');
+    }
+}
+
+function populateCategorySelect(selId, includeAll) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    let html = '';
+    if (includeAll) html = '<option value="0">全部分类</option>';
+    else html = '<option value="">请选择分类</option>';
+    for (const c of categoriesCache) {
+        html += `<option value="${c.id}">${c.name}</option>`;
+    }
+    sel.innerHTML = html;
+}
+
+// ============================================================
+// Tab 1: Dashboard
+// ============================================================
+async function loadDashboard() {
+    try {
+        await refreshCategories();
+        const [questionsRes, wrongRes, statsRes] = await Promise.all([
+            api('/api/questions?limit=0'),
+            api('/api/wrong'),
+            api('/api/stats')
+        ]);
+
+        const totalQuestions = questionsRes.total || 0;
+        const wrongCount = wrongRes.total || 0;
+        const categories = categoriesCache;
+
+        // Quick stats
+        document.getElementById('dashTotalQuestions').textContent = totalQuestions;
+        document.getElementById('dashWrongCount').textContent = wrongCount;
+        document.getElementById('dashCategories').textContent = categories.length;
+
+        // Compute overall accuracy from stats
+        if (statsRes.stats && statsRes.stats.length > 0) {
+            let totalAcc = 0, n = 0;
+            for (const s of statsRes.stats) {
+                if (s.completed > 0) { totalAcc += s.accuracy; n++; }
+            }
+            const avgAcc = n > 0 ? Math.round(totalAcc / n * 100) : 0;
+            document.getElementById('dashAccuracy').textContent = avgAcc + '%';
+        } else {
+            document.getElementById('dashAccuracy').textContent = 'N/A';
+        }
+
+        // Category cards
+        const cardsDiv = document.getElementById('dashCategoryCards');
+        if (categories.length === 0) {
+            cardsDiv.innerHTML = '<div class="col-12"><div class="empty-state"><div class="empty-icon">&#x1F4C1;</div><p>暂无分类，请先导入题库</p></div></div>';
+            return;
+        }
+
+        // Build stats map
+        const statsMap = {};
+        if (statsRes.stats) {
+            for (const s of statsRes.stats) statsMap[s.category_name] = s;
+        }
+
+        // Count questions per category
+        const catCounts = {};
+        for (const c of categories) catCounts[c.id] = { name: c.name, desc: c.description, count: 0, accuracy: 0 };
+        // We need per-category counts — use the stats for that
+        for (const s of (statsRes.stats || [])) {
+            const cat = categories.find(c => c.name === s.category_name);
+            if (cat) {
+                catCounts[cat.id] = catCounts[cat.id] || { name: cat.name, desc: cat.description, count: 0, accuracy: 0 };
+                catCounts[cat.id].count = s.total_questions;
+                catCounts[cat.id].accuracy = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
+            }
+        }
+
+        let cardsHtml = '';
+        for (const cat of categories) {
+            const info = catCounts[cat.id] || { count: 0, accuracy: 0 };
+            cardsHtml += `
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-category">
+                    <div class="category-header"><div class="category-name">${cat.name}</div><div class="category-desc">${cat.description || '暂无描述'}</div></div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">题目数量</span><span class="fw-bold">${info.count}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted small">正确率</span><span class="fw-bold">${info.accuracy}%</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="quickStartQuiz(${cat.id})">开始刷题</button>
+                    </div>
+                </div>
+            </div>`;
+        }
+        cardsDiv.innerHTML = cardsHtml;
+    } catch(e) {
+        showToast('加载仪表盘失败: ' + e.message, 'error');
+    }
+}
+
+function quickStartQuiz(catId) {
+    document.querySelector('#mainTabs [data-tab="quiz"]').click();
+    setTimeout(() => {
+        document.getElementById('quizCategory').value = catId;
+    }, 100);
+}
+
+// ============================================================
+// Tab 2: Question Bank
+// ============================================================
+let bankPage = 0;
+const BANK_PAGE_SIZE = 50;
+
+async function loadQuestionBank(page = 0) {
+    bankPage = page;
+    await refreshCategories();
+    populateCategorySelect('bankFilterCat', true);
+
+    const catId = document.getElementById('bankFilterCat').value;
+    const type = document.getElementById('bankFilterType').value;
+    const search = document.getElementById('bankFilterSearch').value;
+
+    const params = new URLSearchParams();
+    if (catId) params.set('category_id', catId);
+    if (type) params.set('type', type);
+    if (search) params.set('search', search);
+    params.set('limit', BANK_PAGE_SIZE);
+    params.set('offset', page * BANK_PAGE_SIZE);
+
+    const tbody = document.getElementById('bankTableBody');
+    showLoading(tbody);
+
+    try {
+        const data = await api('/api/questions?' + params.toString());
+        const total = data.total || 0;
+        const questions = data.questions || [];
+
+        document.getElementById('bankPaginationInfo').textContent =
+            `共 ${total} 道题目，第 ${page + 1}/${Math.ceil(total / BANK_PAGE_SIZE) || 1} 页`;
+
+        // Pagination buttons
+        const totalPages = Math.ceil(total / BANK_PAGE_SIZE);
+        let pagHtml = '';
+        pagHtml += `<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(${page-1})" ${page<=0?'disabled':''}>上一页</button>`;
+        pagHtml += `<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(${page+1})" ${page>=totalPages-1?'disabled':''}>下一页</button>`;
+        document.getElementById('bankPagination').innerHTML = pagHtml;
+
+        if (questions.length === 0) {
+            showEmpty(tbody, '暂无题目，请先添加或导入题目');
+            return;
+        }
+
+        let html = '';
+        // Build category lookup
+        const catMap = {};
+        for (const c of categoriesCache) catMap[c.id] = c.name;
+
+        for (const q of questions) {
+            const catName = catMap[q.category_id] || '未知';
+            html += `<tr onclick="viewQuestionDetail(${q.id})" class="clickable">
+                <td>${q.id}</td>
+                <td><small>${catName}</small></td>
+                <td>${getTypeBadge(q.question_type)}</td>
+                <td><span class="content-preview">${truncate(q.content, 50)}</span></td>
+                <td><span class="difficulty-stars">${difficultyStars(q.difficulty)}</span></td>
+                <td onclick="event.stopPropagation()">
+                    <button class="btn btn-outline-primary btn-sm me-1" onclick="editQuestion(${q.id})" title="编辑">&#x270F;</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteQuestion(${q.id})" title="删除">&#x1F5D1;</button>
+                </td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+    } catch(e) {
+        showError(tbody, '加载题目失败: ' + e.message);
+    }
+}
+
+async function viewQuestionDetail(qid) {
+    try {
+        const q = await api('/api/questions/' + qid);
+        const catName = (categoriesCache.find(c => c.id === q.category_id) || {}).name || '未知';
+        const options = q.options || [];
+        let html = `
+            <p><strong>ID:</strong> ${q.id} &nbsp; <strong>分类:</strong> ${catName} &nbsp; ${getTypeBadge(q.question_type)} &nbsp; <span class="difficulty-stars">${difficultyStars(q.difficulty)}</span></p>
+            <div class="card bg-light p-3 mb-3"><strong>题目内容:</strong><br>${q.content}</div>`;
+        if (options.length > 0) {
+            html += '<div class="card bg-light p-3 mb-3"><strong>选项:</strong><br>';
+            for (const o of options) html += `${o}<br>`;
+            html += '</div>';
+        }
+        html += `<div class="card bg-light p-3 mb-3"><strong>正确答案:</strong> ${q.answer}</div>`;
+        if (q.analysis) html += `<div class="card bg-light p-3 mb-3"><strong>解析:</strong><br>${q.analysis}</div>`;
+        html += `<p class="small text-muted">来源: ${q.source || '-'} &nbsp; 创建: ${q.created_at || '-'}</p>`;
+
+        document.getElementById('questionDetailBody').innerHTML = html;
+        document.getElementById('detailEditBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); editQuestion(qid); };
+        document.getElementById('detailDeleteBtn').onclick = () => { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); deleteQuestion(qid); };
+        new bootstrap.Modal(document.getElementById('questionDetailModal')).show();
+    } catch(e) {
+        showToast('加载题目详情失败: ' + e.message, 'error');
+    }
+}
+
+async function deleteQuestion(qid) {
+    if (!await confirmDialog('确定要删除此题目吗？此操作不可撤销。')) return;
+    try {
+        await api('/api/questions/' + qid, { method: 'DELETE' });
+        showToast('题目已删除');
+        loadQuestionBank(bankPage);
+    } catch(e) {
+        showToast('删除失败: ' + e.message, 'error');
+    }
+}
+
+function openQuestionModal() {
+    document.getElementById('qeId').value = '';
+    document.getElementById('questionEditTitle').textContent = '添加题目';
+    document.getElementById('qeContent').value = '';
+    document.getElementById('qeOptions').value = '';
+    document.getElementById('qeAnswer').value = '';
+    document.getElementById('qeAnalysis').value = '';
+    document.getElementById('qeSource').value = '';
+    document.getElementById('qeType').value = 'single';
+    document.getElementById('qeDifficulty').value = '3';
+    populateCategorySelect('qeCategory', false);
+    onQeTypeChange();
+    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+}
+
+async function editQuestion(qid) {
+    try {
+        const q = await api('/api/questions/' + qid);
+        document.getElementById('qeId').value = q.id;
+        document.getElementById('questionEditTitle').textContent = '编辑题目';
+        document.getElementById('qeContent').value = q.content;
+        document.getElementById('qeOptions').value = Array.isArray(q.options) ? q.options.join('\n') : (q.options_json || '');
+        document.getElementById('qeAnswer').value = q.answer;
+        document.getElementById('qeAnalysis').value = q.analysis || '';
+        document.getElementById('qeSource').value = q.source || '';
+        document.getElementById('qeType').value = q.question_type || 'single';
+        document.getElementById('qeDifficulty').value = q.difficulty || 1;
+        populateCategorySelect('qeCategory', false);
+        document.getElementById('qeCategory').value = q.category_id;
+        onQeTypeChange();
+        new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+    } catch(e) {
+        showToast('加载题目失败: ' + e.message, 'error');
+    }
+}
+
+function onQeTypeChange() {
+    const type = document.getElementById('qeType').value;
+    const optsGroup = document.getElementById('qeOptionsGroup');
+    if (type === 'fill' || type === 'short') {
+        optsGroup.style.display = 'none';
+        document.getElementById('qeOptions').value = '';
+    } else {
+        optsGroup.style.display = 'block';
+    }
+}
+
+async function saveQuestion() {
+    const id = document.getElementById('qeId').value;
+    const q = {
+        category_id: parseInt(document.getElementById('qeCategory').value) || 0,
+        question_type: document.getElementById('qeType').value,
+        content: document.getElementById('qeContent').value.trim(),
+        answer: document.getElementById('qeAnswer').value.trim(),
+        analysis: document.getElementById('qeAnalysis').value.trim(),
+        difficulty: parseInt(document.getElementById('qeDifficulty').value) || 1,
+        source: document.getElementById('qeSource').value.trim() || 'manual'
+    };
+
+    if (!q.content) { showToast('题目内容不能为空', 'error'); return; }
+    if (!q.answer) { showToast('正确答案不能为空', 'error'); return; }
+    if (q.category_id === 0) { showToast('请选择分类', 'error'); return; }
+
+    // Parse options
+    const type = q.question_type;
+    if (type !== 'fill' && type !== 'short') {
+        let optsText = document.getElementById('qeOptions').value.trim();
+        if (optsText) {
+            const lines = optsText.split('\n').map(s => s.trim()).filter(s => s);
+            q.options = lines;
+        } else {
+            q.options = [];
+        }
+    } else {
+        q.options = [];
+    }
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/api/questions/' + id : '/api/questions';
+        await api(url, { method, body: JSON.stringify(q) });
+        showToast(id ? '题目已更新' : '题目已添加');
+        bootstrap.Modal.getInstance(document.getElementById('questionEditModal')).hide();
+        loadQuestionBank(bankPage);
+    } catch(e) {
+        showToast('保存失败: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// Tab 3: Import
+// ============================================================
+let importQuestions = [];
+
+async function loadImportTab() {
+    await refreshCategories();
+    populateCategorySelect('importCatSelect', false);
+}
+
+function handleImportFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) {
+                if (data.questions && Array.isArray(data.questions)) data = data.questions;
+                else throw new Error('JSON 格式不正确，需要题目数组');
+            }
+            importQuestions = data;
+            document.getElementById('importPreviewCount').textContent = data.length;
+            document.getElementById('importBtn').disabled = data.length === 0;
+            renderImportPreview(data);
+        } catch(err) {
+            showToast('文件解析失败: ' + err.message, 'error');
+            importQuestions = [];
+            document.getElementById('importPreviewCount').textContent = '0';
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('importPreview').innerHTML = '<div class="alert alert-danger">解析失败: ' + err.message + '</div>';
+        }
+    };
+    reader.readAsText(file);
+}
+
+function renderImportPreview(questions) {
+    const preview = document.getElementById('importPreview');
+    if (questions.length === 0) {
+        preview.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>无题目数据</p></div>';
+        return;
+    }
+    let html = '<div class="list-group list-group-flush">';
+    for (let i = 0; i < Math.min(questions.length, 50); i++) {
+        const q = questions[i];
+        html += `<div class="list-group-item py-2"><small><strong>#${i+1}</strong> ${getTypeBadge(q.question_type || 'single')} ${truncate(q.content, 40)}</small></div>`;
+    }
+    if (questions.length > 50) html += `<div class="list-group-item py-2 text-center text-muted small">... 还有 ${questions.length - 50} 道题目</div>`;
+    html += '</div>';
+    preview.innerHTML = html;
+}
+
+async function doImport() {
+    if (importQuestions.length === 0) return;
+    const catId = parseInt(document.getElementById('importCatSelect').value) || 0;
+    const catName = document.getElementById('importCatNew').value.trim();
+    const source = document.getElementById('importSource').value.trim();
+
+    if (catId === 0 && !catName) {
+        showToast('请选择已有分类或输入新分类名称', 'error');
+        return;
+    }
+
+    const body = {
+        category_id: catId,
+        category_name: catName,
+        source: source,
+        questions: importQuestions
+    };
+
+    document.getElementById('importBtn').disabled = true;
+    document.getElementById('importProgress').innerHTML = '<div class="spinner-border spinner-border-sm text-primary me-2"></div>正在导入...';
+
+    try {
+        const result = await api('/api/questions/import', { method: 'POST', body: JSON.stringify(body) });
+        document.getElementById('importProgress').innerHTML =
+            `<div class="alert alert-success py-1 mt-2">导入完成：成功 ${result.imported} 道，失败 ${result.failed} 道</div>`;
+        showToast(`成功导入 ${result.imported} 道题目`);
+        importQuestions = [];
+        document.getElementById('importFileInput').value = '';
+        document.getElementById('importPreviewCount').textContent = '0';
+        document.getElementById('importPreview').innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>请先选择 .json 文件</p></div>';
+    } catch(e) {
+        showToast('导入失败: ' + e.message, 'error');
+        document.getElementById('importProgress').innerHTML = `<div class="alert alert-danger py-1 mt-2">导入失败: ${e.message}</div>`;
+    }
+    document.getElementById('importBtn').disabled = false;
+}
+
+// ============================================================
+// Tab 4: Quiz
+// ============================================================
+let quizState = {
+    questions: [],
+    currentIndex: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    answers: {},      // question_id -> user_answer
+    results: {},      // question_id -> {correct, correctAnswer, analysis}
+    submitted: {},    // question_id -> bool
+    mode: 'sequential',
+    categoryId: 0,
+    active: false
+};
+
+async function loadQuizSetup() {
+    await refreshCategories();
+    populateCategorySelect('quizCategory', true);
+}
+
+function startQuiz() {
+    const mode = document.getElementById('quizMode').value;
+    const categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
+    const count = parseInt(document.getElementById('quizCount').value) || 10;
+
+    document.getElementById('quizSetup').style.display = 'none';
+
+    const activeDiv = document.getElementById('quizActive');
+    activeDiv.style.display = 'block';
+
+    // Show loading in quiz area
+    document.getElementById('quizQuestionArea').innerHTML =
+        '<div class="loading-overlay"><div class="spinner-border text-primary"></div><span class="ms-2">正在加载题目...</span></div>';
+
+    const body = {
+        mode: mode,
+        category_id: categoryId,
+        count: count,
+        wrong_only: mode === 'wrong_only'
+    };
+
+    api('/api/quiz/start', { method: 'POST', body: JSON.stringify(body) })
+        .then(data => {
+            if (!data.questions || data.questions.length === 0) {
+                showToast('没有可用的题目', 'warning');
+                resetQuiz();
+                return;
+            }
+            quizState = {
+                questions: data.questions,
+                currentIndex: 0,
+                correctCount: 0,
+                wrongCount: 0,
+                answers: {},
+                results: {},
+                submitted: {},
+                mode: mode,
+                categoryId: categoryId,
+                active: true,
+                quizId: data.quiz_id
+            };
+            renderCurrentQuestion();
+        })
+        .catch(e => {
+            showToast('加载题目失败: ' + e.message, 'error');
+            resetQuiz();
+        });
+}
+
+function renderCurrentQuestion() {
+    const q = quizState.questions[quizState.currentIndex];
+    if (!q) { finishQuiz(); return; }
+
+    const idx = quizState.currentIndex;
+    const total = quizState.questions.length;
+
+    // Update progress
+    document.getElementById('quizProgressText').textContent = `第 ${idx+1}/${total} 题`;
+    document.getElementById('quizScoreText').textContent =
+        `正确: ${quizState.correctCount} | 错误: ${quizState.wrongCount}`;
+    document.getElementById('quizProgressBar').style.width = ((idx / total) * 100) + '%';
+
+    const isSubmitted = quizState.submitted[q.id];
+    const result = quizState.results[q.id];
+
+    let html = '';
+    html += `<div class="mb-3"><span class="fw-bold">${idx+1}.</span> ${getTypeBadge(q.question_type)} ${q.content}</div>`;
+
+    const options = q.options || [];
+    if (q.question_type === 'single' && options.length > 0) {
+        html += '<div class="mb-3">';
+        for (let i = 0; i < options.length; i++) {
+            const optLabel = String.fromCharCode(65 + i);
+            const optText = options[i];
+            let cls = 'quiz-option';
+            if (isSubmitted) {
+                if (result && result.correct_answer) {
+                    const correctLabel = result.correct_answer.trim().toUpperCase();
+                    if (optLabel === correctLabel) cls += ' reveal-correct';
+                }
+                if (quizState.answers[q.id] && quizState.answers[q.id].trim().toUpperCase() === optLabel) {
+                    cls += result && result.correct ? ' correct' : ' incorrect';
+                }
+                html += `<div class="${cls}"><input type="radio" name="quizOpt" value="${optLabel}" disabled> <strong>${optLabel}.</strong> ${optText}</div>`;
+            } else {
+                html += `<label class="${cls}"><input type="radio" name="quizOpt" value="${optLabel}" onchange="selectQuizAnswer('${optLabel}')"> <strong>${optLabel}.</strong> ${optText}</label>`;
+            }
+        }
+        html += '</div>';
+    } else if (q.question_type === 'multi' && options.length > 0) {
+        html += '<div class="mb-3">';
+        for (let i = 0; i < options.length; i++) {
+            const optLabel = String.fromCharCode(65 + i);
+            const optText = options[i];
+            let cls = 'quiz-option';
+            if (isSubmitted) {
+                if (result && result.correct_answer) {
+                    const correctRaw = result.correct_answer.trim().toUpperCase();
+                    const correctLabels = correctRaw.includes(',') ? correctRaw.split(',').map(s => s.trim()).filter(s => s) : correctRaw.split('').filter(c => c >= 'A' && c <= 'Z');
+                    if (correctLabels.includes(optLabel)) cls += ' reveal-correct';
+                }
+                const userRaw = (quizState.answers[q.id] || '').trim().toUpperCase();
+                const userLabels = userRaw.includes(',') ? userRaw.split(',').map(s => s.trim()).filter(s => s) : userRaw.split('').filter(c => c >= 'A' && c <= 'Z');
+                if (userLabels.includes(optLabel)) {
+                    cls += result && result.correct ? ' correct' : ' incorrect';
+                }
+                html += `<div class="${cls}"><input type="checkbox" disabled> <strong>${optLabel}.</strong> ${optText}</div>`;
+            } else {
+                html += `<label class="${cls}"><input type="checkbox" class="quiz-multi-cb" value="${optLabel}"> <strong>${optLabel}.</strong> ${optText}</label>`;
+            }
+        }
+        html += '</div>';
+    } else if (q.question_type === 'judge') {
+        // Judge questions: use options if present, otherwise default 对/错
+        const judgeOpts = options.length > 0 ? options : ['对', '错'];
+        html += '<div class="mb-3">';
+        for (const opt of judgeOpts) {
+            const optVal = typeof opt === 'string' ? opt : String(opt);
+            let cls = 'quiz-option';
+            if (isSubmitted) {
+                if (result && result.correct_answer && result.correct_answer.trim() === optVal) cls += ' reveal-correct';
+                if (quizState.answers[q.id] && quizState.answers[q.id].trim() === optVal) {
+                    cls += result && result.correct ? ' correct' : ' incorrect';
+                }
+                html += `<div class="${cls}"><input type="radio" disabled> ${optVal}</div>`;
+            } else {
+                html += `<label class="${cls}"><input type="radio" name="quizOpt" value="${optVal}" onchange="selectQuizAnswer('${escapeHtml(optVal)}')"> ${optVal}</label>`;
+            }
+        }
+        html += '</div>';
+    } else {
+        // fill or short answer - text input
+        if (isSubmitted) {
+            const userAns = quizState.answers[q.id] || '(未作答)';
+            html += `<div class="mb-3"><p><strong>你的答案:</strong> ${userAns}</p></div>`;
+        } else {
+            html += `<div class="mb-3"><label class="form-label">请输入答案：</label><input class="form-control" id="quizTextInput" placeholder="输入答案..."></div>`;
+        }
+    }
+
+    // Show result
+    if (isSubmitted && result) {
+        html += `<div class="alert ${result.correct ? 'alert-success' : 'alert-danger'} py-2">`;
+        html += result.correct
+            ? '<span class="result-correct">&#x2714; 回答正确！</span>'
+            : '<span class="result-incorrect">&#x2718; 回答错误</span>';
+        html += ` <strong>正确答案:</strong> ${result.correct_answer}`;
+        if (result.analysis) html += `<br><small><strong>解析:</strong> ${result.analysis}</small>`;
+        html += '</div>';
+    }
+
+    // Action buttons
+    html += '<div class="d-flex gap-2 mt-3">';
+    if (!isSubmitted) {
+        html += '<button class="btn btn-primary" onclick="submitQuizAnswer()">提交答案</button>';
+    }
+    html += `<button class="btn ${isSubmitted ? 'btn-primary' : 'btn-outline-secondary'}" onclick="nextQuestion()">${quizState.currentIndex >= quizState.questions.length - 1 ? '查看结果' : '下一题'}</button>`;
+    html += '</div>';
+
+    document.getElementById('quizQuestionArea').innerHTML = html;
+}
+
+function selectQuizAnswer(value) {
+    const q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+    quizState.answers[q.id] = value;
+}
+
+function submitQuizAnswer() {
+    const q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+
+    let userAnswer = '';
+    if (q.question_type === 'multi') {
+        const cbs = document.querySelectorAll('.quiz-multi-cb:checked');
+        const vals = [];
+        cbs.forEach(cb => vals.push(cb.value));
+        vals.sort();
+        userAnswer = vals.join('');
+    } else if (q.question_type === 'fill' || q.question_type === 'short') {
+        userAnswer = document.getElementById('quizTextInput')?.value?.trim() || '';
+    } else {
+        userAnswer = quizState.answers[q.id] || '';
+    }
+
+    if (!userAnswer && (q.question_type === 'single' || q.question_type === 'multi' || q.question_type === 'judge')) {
+        showToast('请先选择答案', 'warning');
+        return;
+    }
+
+    quizState.answers[q.id] = userAnswer;
+
+    // Submit to API
+    const body = {
+        question_id: q.id,
+        user_answer: userAnswer,
+        category_id: quizState.categoryId,
+        mode: quizState.mode
+    };
+
+    const area = document.getElementById('quizQuestionArea');
+    area.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">正在评判...</span></div>';
+
+    api('/api/quiz/submit', { method: 'POST', body: JSON.stringify(body) })
+        .then(result => {
+            quizState.results[q.id] = result;
+            quizState.submitted[q.id] = true;
+            if (result.correct) quizState.correctCount++;
+            else quizState.wrongCount++;
+            renderCurrentQuestion();
+        })
+        .catch(e => {
+            // Fallback: if API fails, check locally
+            showToast('提交评判失败: ' + e.message, 'warning');
+            // Still mark as submitted so user can proceed
+            quizState.submitted[q.id] = true;
+            quizState.results[q.id] = { correct: false, correct_answer: '未知', analysis: '评判服务不可用' };
+            quizState.wrongCount++;
+            renderCurrentQuestion();
+        });
+}
+
+function nextQuestion() {
+    const q = quizState.questions[quizState.currentIndex];
+    if (!quizState.submitted[q.id]) {
+        showToast('请先提交答案', 'warning');
+        return;
+    }
+    if (quizState.currentIndex >= quizState.questions.length - 1) {
+        finishQuiz();
+        return;
+    }
+    quizState.currentIndex++;
+    renderCurrentQuestion();
+}
+
+function finishQuiz() {
+    document.getElementById('quizActive').style.display = 'none';
+    document.getElementById('quizSummary').style.display = 'block';
+
+    const total = quizState.questions.length;
+    const correct = quizState.correctCount;
+    const wrong = quizState.wrongCount;
+    const score = total > 0 ? Math.round(correct / total * 100) : 0;
+
+    document.getElementById('quizSummaryTotal').textContent = total;
+    document.getElementById('quizSummaryCorrect').textContent = correct;
+    document.getElementById('quizSummaryWrong').textContent = wrong;
+    document.getElementById('quizSummaryScore').textContent = `得分: ${score}%`;
+
+    const emoji = score >= 80 ? '&#x1F389;' : score >= 60 ? '&#x1F44D;' : '&#x1F4AA;';
+    document.getElementById('quizSummaryEmoji').innerHTML = emoji;
+    document.getElementById('quizProgressBar').style.width = '100%';
+}
+
+function endQuiz() {
+    if (confirm('确定要结束刷题吗？当前进度将丢失。')) {
+        finishQuiz();
+    }
+}
+
+function resetQuiz() {
+    quizState = { questions: [], currentIndex: 0, correctCount: 0, wrongCount: 0, answers: {}, results: {}, submitted: {}, mode: 'sequential', categoryId: 0, active: false };
+    document.getElementById('quizSetup').style.display = 'block';
+    document.getElementById('quizActive').style.display = 'none';
+    document.getElementById('quizSummary').style.display = 'none';
+    document.getElementById('quizQuestionArea').innerHTML = '';
+    document.getElementById('quizProgressBar').style.width = '0%';
+}
+
+// ============================================================
+// Tab 5: Wrong Book
+// ============================================================
+async function loadWrongBook() {
+    await refreshCategories();
+    populateCategorySelect('wrongFilterCat', true);
+
+    const catId = document.getElementById('wrongFilterCat').value;
+    const tbody = document.getElementById('wrongTableBody');
+    showLoading(tbody);
+
+    try {
+        const params = catId && catId !== '0' ? '?category_id=' + catId : '';
+        const data = await api('/api/wrong' + params);
+        const wrongs = data.wrong_questions || [];
+        document.getElementById('wrongCountInfo').textContent = `共 ${data.total || wrongs.length} 道错题`;
+
+        if (wrongs.length === 0) {
+            showEmpty(tbody, '恭喜！没有错题');
+            return;
+        }
+
+        let html = '';
+        for (const w of wrongs) {
+            const options = w.options || [];
+            html += `<tr>
+                <td>${w.id}</td>
+                <td><small>${w.category_name || '未知'}</small></td>
+                <td><span title="${w.content}">${getTypeBadge(w.question_type)} ${truncate(w.content, 30)}</span></td>
+                <td><span class="text-danger">${truncate(w.user_answer, 20) || '-'}</span></td>
+                <td><span class="text-success">${truncate(w.answer, 20)}</span></td>
+                <td><span class="badge bg-danger">${w.wrong_count}次</span></td>
+                <td>${w.reviewed ? '<span class="badge bg-success">已复习</span>' : '<span class="badge bg-warning">待复习</span>'}</td>
+                <td>
+                    <button class="btn btn-outline-success btn-sm me-1" onclick="reviewWrong(${w.id})" ${w.reviewed?'disabled':''} title="标记已复习">&#x2713;</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteWrong(${w.id})" title="删除">&#x1F5D1;</button>
+                </td>
+            </tr>`;
+        }
+        tbody.innerHTML = html;
+    } catch(e) {
+        showError(tbody, '加载错题本失败: ' + e.message);
+    }
+}
+
+async function reviewWrong(id) {
+    try {
+        await api('/api/wrong/' + id + '/review', { method: 'PUT' });
+        showToast('已标记为已复习');
+        loadWrongBook();
+    } catch(e) {
+        showToast('操作失败: ' + e.message, 'error');
+    }
+}
+
+async function deleteWrong(id) {
+    if (!await confirmDialog('确定要删除此错题记录吗？')) return;
+    try {
+        await api('/api/wrong/' + id, { method: 'DELETE' });
+        showToast('已删除');
+        loadWrongBook();
+    } catch(e) {
+        showToast('删除失败: ' + e.message, 'error');
+    }
+}
+
+function redoWrongQuestions() {
+    document.querySelector('#mainTabs [data-tab="quiz"]').click();
+    setTimeout(() => {
+        document.getElementById('quizMode').value = 'wrong_only';
+    }, 100);
+}
+
+// ============================================================
+// Tab 6: AI Assistant
+// ============================================================
+let currentAiSub = 'config';
+
+function switchAiSub(sub) {
+    currentAiSub = sub;
+    document.querySelectorAll('.ai-sub-pane').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('#aiSubTabs .nav-link').forEach(b => b.classList.remove('active'));
+
+    document.getElementById('aiSub' + sub.charAt(0).toUpperCase() + sub.slice(1)).style.display = 'block';
+    const btn = document.querySelector(`#aiSubTabs [data-ai-sub="${sub}"]`);
+    if (btn) btn.classList.add('active');
+
+    if (sub === 'config') loadAiConfig();
+    else if (sub === 'analyze' || sub === 'variant') loadAiQuestionSelect();
+}
+
+function getAiConfig() {
+    try {
+        const stored = localStorage.getItem('quiz_ai_config');
+        if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    return { provider: 'openai', base_url: 'https://api.openai.com/v1', api_key: '', model: 'gpt-3.5-turbo' };
+}
+
+function saveAiConfigToStorage(config) {
+    localStorage.setItem('quiz_ai_config', JSON.stringify(config));
+}
+
+function loadAiConfig() {
+    const config = getAiConfig();
+    document.getElementById('aiProvider').value = config.provider || 'openai';
+    document.getElementById('aiBaseUrl').value = config.base_url || '';
+    document.getElementById('aiApiKey').value = config.api_key || '';
+    document.getElementById('aiModel').value = config.model || '';
+    document.getElementById('aiTestResult').textContent = '';
+}
+
+function onAiProviderChange() {
+    const provider = document.getElementById('aiProvider').value;
+    const defaults = AI_PROVIDERS[provider] || {};
+    document.getElementById('aiBaseUrl').value = defaults.base_url || '';
+    document.getElementById('aiModel').value = defaults.model || '';
+}
+
+function saveAiConfig() {
+    const config = {
+        provider: document.getElementById('aiProvider').value,
+        base_url: document.getElementById('aiBaseUrl').value.trim(),
+        api_key: document.getElementById('aiApiKey').value.trim(),
+        model: document.getElementById('aiModel').value.trim()
+    };
+    saveAiConfigToStorage(config);
+    showToast('AI 配置已保存');
+}
+
+async function testAiConnection() {
+    document.getElementById('aiTestResult').innerHTML = '<span class="text-muted">测试中...</span>';
+    const config = getAiConfig();
+    if (!config.base_url || !config.api_key) {
+        document.getElementById('aiTestResult').innerHTML = '<span class="text-danger">请先完善配置</span>';
+        return;
+    }
+    try {
+        await api('/api/ai/generate', {
+            method: 'POST',
+            body: JSON.stringify({
+                ...config,
+                topic: '测试',
+                question_type: 'single',
+                difficulty: 1
+            })
+        });
+        document.getElementById('aiTestResult').innerHTML = '<span class="text-success">连接成功</span>';
+    } catch(e) {
+        document.getElementById('aiTestResult').innerHTML = '<span class="text-danger">连接失败: ' + e.message + '</span>';
+    }
+}
+
+async function loadAiQuestionSelect() {
+    await refreshCategories();
+    try {
+        const data = await api('/api/questions?limit=200');
+        const questions = data.questions || [];
+        let options = '<option value="">请选择题目...</option>';
+        for (const q of questions) {
+            options += `<option value="${q.id}">[${TYPE_LABELS[q.question_type] || q.question_type}] ${truncate(q.content, 50)}</option>`;
+        }
+        const selA = document.getElementById('aiAnalyzeQuestion');
+        const selV = document.getElementById('aiVariantQuestion');
+        if (selA) selA.innerHTML = options;
+        if (selV) selV.innerHTML = options;
+    } catch(e) {
+        showToast('加载题目列表失败: ' + e.message, 'error');
+    }
+}
+
+async function doAiAnalyze() {
+    const qid = document.getElementById('aiAnalyzeQuestion').value;
+    if (!qid) { showToast('请选择题目', 'warning'); return; }
+    const config = getAiConfig();
+    if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
+
+    const resultDiv = document.getElementById('aiAnalyzeResult');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在解析...</span></div>';
+
+    try {
+        const question = await api('/api/questions/' + qid);
+        const body = {
+            ...config,
+            content: question.content,
+            options: question.options || [],
+            answer: question.answer || ''
+        };
+        const result = await api('/api/ai/analyze', { method: 'POST', body: JSON.stringify(body) });
+        resultDiv.innerHTML = result.analysis || 'AI 未返回解析结果';
+
+        // Add save button
+        resultDiv.insertAdjacentHTML('afterend', `
+            <div class="mt-2" id="aiAnalyzeSaveArea">
+                <button class="btn btn-outline-primary btn-sm" onclick="saveAiAnalysis(${qid})">保存解析到题目</button>
+            </div>`);
+        window._aiAnalyzeResult = result.analysis;
+    } catch(e) {
+        resultDiv.innerHTML = `<div class="text-danger">解析失败: ${e.message}</div>`;
+    }
+}
+
+async function saveAiAnalysis(qid) {
+    const analysis = window._aiAnalyzeResult;
+    if (!analysis) return;
+    try {
+        const q = await api('/api/questions/' + qid);
+        q.analysis = analysis;
+        await api('/api/questions/' + qid, { method: 'PUT', body: JSON.stringify(q) });
+        showToast('解析已保存到题目');
+        document.getElementById('aiAnalyzeSaveArea')?.remove();
+    } catch(e) {
+        showToast('保存失败: ' + e.message, 'error');
+    }
+}
+
+async function doAiVariant() {
+    const qid = document.getElementById('aiVariantQuestion').value;
+    if (!qid) { showToast('请选择原题', 'warning'); return; }
+    const config = getAiConfig();
+    if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
+
+    const resultDiv = document.getElementById('aiVariantResult');
+    const saveArea = document.getElementById('aiVariantSaveArea');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在生成变体题...</span></div>';
+    saveArea.style.display = 'none';
+
+    try {
+        const question = await api('/api/questions/' + qid);
+        const body = {
+            ...config,
+            original_content: question.content,
+            original_answer: question.answer || '',
+            question_type: question.question_type || 'single'
+        };
+        const result = await api('/api/ai/variant', { method: 'POST', body: JSON.stringify(body) });
+        resultDiv.innerHTML = result.variant || 'AI 未返回结果';
+
+        const parsed = parseAiQuestion(result.variant, question.question_type);
+        if (parsed.content && parsed.answer) {
+            window._parsedVariant = parsed;
+            window._variantCatId = question.category_id;
+            saveArea.style.display = 'block';
+            saveArea.innerHTML = `
+                <div class="card bg-light p-3 mt-2">
+                    <strong>解析结果:</strong><br>
+                    题干: ${parsed.content}<br>
+                    选项: ${(parsed.options || []).join(', ') || '无'}<br>
+                    答案: ${parsed.answer}<br>
+                    解析: ${parsed.analysis || '无'}
+                </div>
+                <button class="btn btn-success btn-sm mt-2" onclick="saveParsedVariant()">保存为题目</button>`;
+        } else {
+            saveArea.style.display = 'block';
+            saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
+        }
+    } catch(e) {
+        resultDiv.innerHTML = `<div class="text-danger">生成失败: ${e.message}</div>`;
+    }
+}
+
+async function saveParsedVariant() {
+    const parsed = window._parsedVariant;
+    if (!parsed) return;
+    try {
+        const body = {
+            category_id: window._variantCatId || 0,
+            question_type: parsed.question_type || 'single',
+            content: parsed.content,
+            options: parsed.options || [],
+            answer: parsed.answer,
+            analysis: parsed.analysis || '',
+            difficulty: 3,
+            source: 'ai_variant'
+        };
+        await api('/api/questions', { method: 'POST', body: JSON.stringify(body) });
+        showToast('变体题已保存');
+        document.getElementById('aiVariantSaveArea').style.display = 'none';
+    } catch(e) {
+        showToast('保存失败: ' + e.message, 'error');
+    }
+}
+
+async function doAiGenerate() {
+    const topic = document.getElementById('aiGenTopic').value.trim();
+    const type = document.getElementById('aiGenType').value;
+    const difficulty = parseInt(document.getElementById('aiGenDifficulty').value) || 3;
+    if (!topic) { showToast('请输入知识点/主题', 'warning'); return; }
+
+    const config = getAiConfig();
+    if (!config.base_url) { showToast('请先在AI配置中设置API信息', 'warning'); return; }
+
+    const resultDiv = document.getElementById('aiGenResult');
+    const saveArea = document.getElementById('aiGenSaveArea');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在出题...</span></div>';
+    saveArea.style.display = 'none';
+
+    try {
+        const body = { ...config, topic, question_type: type, difficulty };
+        const result = await api('/api/ai/generate', { method: 'POST', body: JSON.stringify(body) });
+        resultDiv.innerHTML = result.question || 'AI 未返回结果';
+
+        const parsed = parseAiQuestion(result.question, type);
+        if (parsed.content && parsed.answer) {
+            window._parsedGenerated = parsed;
+            saveArea.style.display = 'block';
+            saveArea.innerHTML = `
+                <div class="card bg-light p-3 mt-2"><strong>解析结果:</strong><br>
+                题干: ${parsed.content}<br>
+                选项: ${(parsed.options || []).join(', ') || '无'}<br>
+                答案: ${parsed.answer}<br>
+                解析: ${parsed.analysis || '无'}
+                </div>
+                <button class="btn btn-success btn-sm mt-2" onclick="saveParsedGenerated()">保存为题目</button>`;
+        } else {
+            saveArea.style.display = 'block';
+            saveArea.innerHTML = '<p class="text-muted small mt-2">无法自动解析，请手动复制使用</p>';
+        }
+    } catch(e) {
+        resultDiv.innerHTML = `<div class="text-danger">生成失败: ${e.message}</div>`;
+    }
+}
+
+async function saveParsedGenerated() {
+    const parsed = window._parsedGenerated;
+    if (!parsed) return;
+    try {
+        const body = {
+            category_id: 0,
+            question_type: parsed.question_type || 'single',
+            content: parsed.content,
+            options: parsed.options || [],
+            answer: parsed.answer,
+            analysis: parsed.analysis || '',
+            difficulty: parseInt(document.getElementById('aiGenDifficulty').value) || 3,
+            source: 'ai_generated'
+        };
+        const catName = 'AI生成题目';
+        body.category_name = catName;
+        await api('/api/questions/import', { method: 'POST', body: JSON.stringify({
+            category_name: catName,
+            questions: [body],
+            source: 'ai_generated'
+        })});
+        showToast('题目已保存（分类: AI生成题目）');
+        document.getElementById('aiGenSaveArea').style.display = 'none';
+    } catch(e) {
+        showToast('保存失败: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// Tab 7: Stats
+// ============================================================
+let statsChart = null;
+
+async function loadStats() {
+    await refreshCategories();
+
+    // Load stats
+    const cardsContainer = document.getElementById('statsCategoryCards');
+    showLoading(cardsContainer);
+
+    try {
+        const data = await api('/api/stats');
+        const stats = data.stats || [];
+
+        if (stats.length === 0) {
+            showEmpty(cardsContainer, '暂无统计数据，请先刷题');
+            document.getElementById('statsHistory').innerHTML = '<div class="empty-state"><p>暂无刷题记录</p></div>';
+            document.getElementById('statsSummary').innerHTML = '';
+            destroyChart();
+            return;
+        }
+
+        // Category stat cards
+        let cardsHtml = '';
+        for (const s of stats) {
+            const accPct = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
+            cardsHtml += `<div class="col-md-4 col-lg-3"><div class="card card-stat p-3">
+                <div class="fw-bold small">${s.category_name}</div>
+                <div class="d-flex justify-content-between mt-2">
+                    <div><div class="stat-value text-primary" style="font-size:1.2rem">${s.total_questions}</div><div class="stat-label" style="font-size:0.7rem">总题数</div></div>
+                    <div><div class="stat-value text-info" style="font-size:1.2rem">${s.completed}</div><div class="stat-label" style="font-size:0.7rem">练习次数</div></div>
+                    <div><div class="stat-value text-success" style="font-size:1.2rem">${accPct}%</div><div class="stat-label" style="font-size:0.7rem">正确率</div></div>
+                </div>
+            </div></div>`;
+        }
+        cardsContainer.innerHTML = cardsHtml;
+
+        // Chart
+        const labels = stats.map(s => s.category_name);
+        const accuracies = stats.map(s => s.completed > 0 ? Math.round(s.accuracy * 100) : 0);
+        const totals = stats.map(s => s.total_questions);
+        renderChart(labels, accuracies, totals);
+
+        // Quiz history
+        await loadStatsHistory();
+
+        // Summary
+        const totalQ = stats.reduce((a,s) => a + s.total_questions, 0);
+        const totalDone = stats.reduce((a,s) => a + s.completed, 0);
+        let totalAcc = 0, nAcc = 0;
+        stats.forEach(s => { if (s.completed > 0) { totalAcc += s.accuracy; nAcc++; } });
+        const avgAcc = nAcc > 0 ? Math.round(totalAcc / nAcc * 100) : 0;
+        document.getElementById('statsSummary').innerHTML = `
+            <div class="alert alert-info py-2 mb-0"><strong>总计:</strong> ${totalQ} 道题目 | ${totalDone} 次练习 | 平均正确率 ${avgAcc}%</div>`;
+    } catch(e) {
+        showError(cardsContainer, '加载统计失败: ' + e.message);
+    }
+}
+
+function renderChart(labels, accuracies, totals) {
+    destroyChart();
+    const ctx = document.getElementById('statsAccuracyChart').getContext('2d');
+    statsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '正确率 (%)',
+                data: accuracies,
+                backgroundColor: accuracies.map(a => a >= 80 ? 'rgba(25,135,84,0.7)' : a >= 60 ? 'rgba(255,193,7,0.7)' : 'rgba(220,53,69,0.7)'),
+                borderColor: accuracies.map(a => a >= 80 ? '#198754' : a >= 60 ? '#ffc107' : '#dc3545'),
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return '正确率: ' + ctx.raw + '%'; }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, title: { display: true, text: '正确率' } },
+                x: { title: { display: true, text: '分类' } }
+            }
+        }
+    });
+}
+
+function destroyChart() {
+    if (statsChart) { statsChart.destroy(); statsChart = null; }
+}
+
+async function loadStatsHistory() {
+    const historyDiv = document.getElementById('statsHistory');
+    showLoading(historyDiv);
+
+    try {
+        if (categoriesCache.length === 0) { showEmpty(historyDiv, '暂无分类数据'); return; }
+
+        // Show per-category stats as practice history
+        const data = await api('/api/stats');
+        const stats = data.stats || [];
+
+        if (stats.length === 0) {
+            showEmpty(historyDiv, '暂无刷题记录');
+            return;
+        }
+
+        let html = '';
+        for (const s of stats) {
+            const accPct = s.completed > 0 ? Math.round(s.accuracy * 100) : 0;
+            const color = accPct >= 80 ? 'success' : accPct >= 60 ? 'warning' : 'danger';
+            html += `<div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div><strong>${s.category_name}</strong><br><small class="text-muted">练习 ${s.completed} 次 | ${s.total_questions} 题</small></div>
+                <div><span class="badge bg-${color} fs-6">${accPct}%</span></div>
+            </div>`;
+        }
+        historyDiv.innerHTML = html;
+    } catch(e) {
+        showError(historyDiv, '加载历史失败: ' + e.message);
+    }
+}
+
+// ============================================================
+// Initialization
+// ============================================================
+async function init() {
+    document.getElementById('tab-dashboard').classList.add('show', 'active');
+    try {
+        await refreshCategories();
+    } catch(e) {}
+    loadDashboard();
+    loadQuizSetup();
+    loadImportTab();
+    loadAiConfig();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Build artifacts
+build/
+*.exe
+*.o
+*.obj
+
+# Database
+data/quiz_app.db
+data/quiz_app.db-wal
+data/quiz_app.db-shm
+
+# Large data files
+*.pdf
+
+# Temp files
+*.tmp
+*.swp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
