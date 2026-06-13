@@ -1,17 +1,17 @@
 #include "database.hpp"
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
+#include <memory>
 
 namespace db {
 
-// ============================================================
-// Helper: RAII prepared statement wrapper
-// ============================================================
+namespace {
+
+// RAII prepared statement wrapper
 struct StmtGuard {
     sqlite3_stmt* stmt = nullptr;
-    StmtGuard(sqlite3* db, const char* sql) {
-        int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    StmtGuard(sqlite3* db, std::string_view sql) {
+        int rc = sqlite3_prepare_v2(db, sql.data(), -1, &stmt, nullptr);
         if (rc != SQLITE_OK) {
             std::cerr << "[DB] prepare failed: " << sqlite3_errmsg(db) << " SQL: " << sql << std::endl;
             stmt = nullptr;
@@ -20,22 +20,29 @@ struct StmtGuard {
     ~StmtGuard() {
         if (stmt) sqlite3_finalize(stmt);
     }
-    sqlite3_stmt* get() const { return stmt; }
-    operator bool() const { return stmt != nullptr; }
+    StmtGuard(const StmtGuard&) = delete;
+    StmtGuard& operator=(const StmtGuard&) = delete;
+    [[nodiscard]] sqlite3_stmt* get() const { return stmt; }
+    [[nodiscard]] operator bool() const { return stmt != nullptr; }
 };
 
-// Helper: read a nullable text column safely
-static std::string colText(sqlite3_stmt* stmt, int col) {
-    int type = sqlite3_column_type(stmt, col);
-    if (type == SQLITE_NULL) return "";
-    const char* text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, col));
-    return text ? std::string(text) : std::string();
+// RAII wrapper for sqlite3 error message
+using ErrorMsgGuard = std::unique_ptr<char, decltype(&sqlite3_free)>;
+
+// Read a nullable text column safely
+[[nodiscard]] auto colText(sqlite3_stmt* stmt, int col) -> std::string {
+    if (sqlite3_column_type(stmt, col) == SQLITE_NULL) return {};
+    auto* text = static_cast<const char*>(
+        static_cast<const void*>(sqlite3_column_text(stmt, col)));
+    return text ? std::string{text} : std::string{};
 }
 
-// Helper: bind text, handling empty string as NULL for optional columns
-static void bindText(sqlite3_stmt* stmt, int idx, const std::string& val) {
+// Bind a text value to a prepared statement
+void bindText(sqlite3_stmt* stmt, int idx, const std::string& val) {
     sqlite3_bind_text(stmt, idx, val.c_str(), -1, SQLITE_TRANSIENT);
 }
+
+} // anonymous namespace
 
 // ============================================================
 // Constructor / Destructor
@@ -60,12 +67,13 @@ Database::~Database() {
 }
 
 void Database::exec(const std::string& sql) {
-    char* errMsg = nullptr;
-    int rc = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &errMsg);
+    char* raw_msg = nullptr;
+    int rc = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &raw_msg);
     if (rc != SQLITE_OK) {
-        std::string err = errMsg ? errMsg : "unknown";
-        std::cerr << "[DB] exec failed: " << err << " SQL: " << sql << std::endl;
-        sqlite3_free(errMsg);
+        ErrorMsgGuard errMsg{raw_msg, sqlite3_free};
+        std::cerr << "[DB] exec failed: "
+                  << (errMsg ? errMsg.get() : "unknown")
+                  << " SQL: " << sql << std::endl;
     }
 }
 

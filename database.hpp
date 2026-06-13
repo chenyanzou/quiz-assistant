@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <map>
 #include <optional>
 #include "sqlite3.h"
 
@@ -63,46 +62,46 @@ struct StatsItem {
 
 class Database {
 public:
-    Database(const std::string& path);
+    explicit Database(const std::string& path);
     ~Database();
 
     // Categories
-    std::vector<Category> getCategories();
-    std::optional<Category> getCategory(int id);
-    int addCategory(const std::string& name, const std::string& desc);
-    bool deleteCategory(int id);
+    auto getCategories() -> std::vector<Category>;
+    auto getCategory(int id) -> std::optional<Category>;
+    auto addCategory(const std::string& name, const std::string& desc) -> int;
+    auto deleteCategory(int id) -> bool;
 
     // Questions
-    std::vector<Question> getQuestions(std::optional<int> category_id = {},
+    auto getQuestions(std::optional<int> category_id = {},
         std::optional<std::string> type = {},
         std::optional<std::string> search = {},
-        int limit = 100, int offset = 0);
-    int countQuestions(std::optional<int> category_id = {},
+        int limit = 100, int offset = 0) -> std::vector<Question>;
+    auto countQuestions(std::optional<int> category_id = {},
         std::optional<std::string> type = {},
-        std::optional<std::string> search = {});
-    std::optional<Question> getQuestion(int id);
-    int addQuestion(const Question& q);
-    bool updateQuestion(int id, const Question& q);
-    bool deleteQuestion(int id);
+        std::optional<std::string> search = {}) -> int;
+    auto getQuestion(int id) -> std::optional<Question>;
+    auto addQuestion(const Question& q) -> int;
+    auto updateQuestion(int id, const Question& q) -> bool;
+    auto deleteQuestion(int id) -> bool;
 
     // Quiz records
-    int addQuizRecord(const QuizRecord& r);
-    std::vector<QuizRecord> getQuizRecords(int category_id, int limit = 10);
+    auto addQuizRecord(const QuizRecord& r) -> int;
+    auto getQuizRecords(int category_id, int limit = 10) -> std::vector<QuizRecord>;
 
     // Wrong questions
-    void addWrongAnswer(int question_id, const std::string& user_answer);
-    std::vector<WrongQuestion> getWrongQuestions(std::optional<int> category_id = {});
-    int countWrongQuestions(std::optional<int> category_id = {});
-    bool deleteWrongQuestion(int id);
-    bool markWrongReviewed(int id);
+    auto addWrongAnswer(int question_id, const std::string& user_answer) -> void;
+    auto getWrongQuestions(std::optional<int> category_id = {}) -> std::vector<WrongQuestion>;
+    auto countWrongQuestions(std::optional<int> category_id = {}) -> int;
+    auto deleteWrongQuestion(int id) -> bool;
+    auto markWrongReviewed(int id) -> bool;
 
     // Stats
-    std::vector<StatsItem> getStats();
+    auto getStats() -> std::vector<StatsItem>;
 
 private:
-    sqlite3* db_;
-    void exec(const std::string& sql);
-    void initTables();
+    sqlite3* db_{nullptr};
+    auto exec(const std::string& sql) -> void;
+    auto initTables() -> void;
 };
 
 } // namespace db

@@ -1,6 +1,5 @@
 #pragma once
 #include <string>
-#include <map>
 
 struct AIConfig {
     std::string provider;     // openai, kimi, deepseek, qwen, glm, custom
@@ -11,24 +10,24 @@ struct AIConfig {
 
 namespace ai {
 
-std::string chatCompletion(const AIConfig& config,
+auto chatCompletion(const AIConfig& config,
     const std::string& system_prompt,
-    const std::string& user_message);
+    const std::string& user_message) -> std::string;
 
 // Built-in prompts
-std::string analyzeQuestion(const AIConfig& config,
+auto analyzeQuestion(const AIConfig& config,
     const std::string& question_content,
     const std::string& options_json,
-    const std::string& answer);
+    const std::string& answer) -> std::string;
 
-std::string generateVariant(const AIConfig& config,
+auto generateVariant(const AIConfig& config,
     const std::string& original_content,
     const std::string& original_answer,
-    const std::string& question_type);
+    const std::string& question_type) -> std::string;
 
-std::string generateQuestion(const AIConfig& config,
+auto generateQuestion(const AIConfig& config,
     const std::string& topic,
     const std::string& question_type,
-    int difficulty);
+    int difficulty) -> std::string;
 
 } // namespace ai

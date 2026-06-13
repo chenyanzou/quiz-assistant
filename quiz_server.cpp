@@ -7,7 +7,6 @@
 #include <sstream>
 #include <random>
 #include <algorithm>
-#include <ctime>
 #include <cctype>
 #include <set>
 #include <chrono>
@@ -16,43 +15,47 @@ using json = nlohmann::json;
 using namespace httplib;
 
 // ============================================================
-// Helpers
+// Helpers (anonymous namespace — replaces file-statics)
 // ============================================================
 
-static std::string readFile(const std::string& path) {
-    std::ifstream f(path);
-    if (!f) return "";
+namespace {
+
+[[nodiscard]] auto readFile(const std::string& path) -> std::string {
+    std::ifstream f{path};
+    if (!f) return {};
     std::ostringstream ss;
     ss << f.rdbuf();
     return ss.str();
 }
 
-static std::unique_ptr<db::Database> g_db;
+auto g_db = std::unique_ptr<db::Database>{};
 
 // Case-insensitive character comparison
-static int ciCharCompare(char a, char b) {
+[[nodiscard]] auto ciCharCompare(char a, char b) -> bool {
     return std::tolower(static_cast<unsigned char>(a))
         == std::tolower(static_cast<unsigned char>(b));
 }
 
-static std::string trim(const std::string& s) {
-    size_t start = 0;
-    while (start < s.size() && std::isspace(static_cast<unsigned char>(s[start])))
-        ++start;
-    size_t end = s.size();
-    while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])))
-        --end;
-    return s.substr(start, end - start);
+[[nodiscard]] auto trim(std::string_view s) -> std::string {
+    auto start = s.find_first_not_of(" \t\n\r");
+    if (start == std::string_view::npos) return {};
+    auto end = s.find_last_not_of(" \t\n\r");
+    return std::string{s.substr(start, end - start + 1)};
 }
 
-static bool answersMatch(const std::string& userAnswer, const std::string& correctAnswer) {
+[[nodiscard]] auto answersMatch(std::string_view userAnswer, std::string_view correctAnswer) -> bool {
     auto tu = trim(userAnswer);
     auto tc = trim(correctAnswer);
     return std::equal(
         tu.begin(), tu.end(),
-        tc.begin(),
-        ciCharCompare);
+        tc.begin(), tc.end(),
+        [](char a, char b) {
+            return std::tolower(static_cast<unsigned char>(a))
+                == std::tolower(static_cast<unsigned char>(b));
+        });
 }
+
+} // anonymous namespace
 
 // ============================================================
 // Route setup
