@@ -1304,6 +1304,80 @@ function saveQuestion() {
 // ============================================================
 var importQuestions = [];
 
+// Normalize JSON field names from various formats
+function normalizeQuestion(item) {
+    // Find the actual key in the object (case-insensitive)
+    function find(obj, keys) {
+        for (var i = 0; i < obj.length; i++) {
+            for (var k = 0; k < keys.length; k++) {
+                if (obj[i] !== undefined && obj[i] !== null && typeof obj[i] === 'object' && keys[k] in obj[i]) {
+                    return obj[i][keys[k]];
+                }
+            }
+        }
+        // Also check top-level
+        for (var k = 0; k < keys.length; k++) {
+            if (item[keys[k]] !== undefined) return item[keys[k]];
+        }
+        return undefined;
+    }
+    // Also search by lowercase
+    function findCi(defaultVal) {
+        var ks = Object.keys(item);
+        for (var i = 0; i < arguments.length; i++) {
+            for (var k = 0; k < ks.length; k++) {
+                if (ks[k].toLowerCase() === arguments[i].toLowerCase()) {
+                    return item[ks[k]];
+                }
+            }
+        }
+        return defaultVal;
+    }
+
+    var q = {};
+    // Type: type, question_type, qtype, 题型
+    q.question_type = findCi('single', 'type', 'question_type', 'qtype', 'questionType', '题型');
+    if (q.question_type === 'choice') q.question_type = 'single';
+    if (q.question_type === 'mc') q.question_type = 'single';
+    if (q.question_type === 'multiple_choice') q.question_type = 'single';
+    if (q.question_type === '单选') q.question_type = 'single';
+    if (q.question_type === '多选') q.question_type = 'multi';
+    if (q.question_type === '判断' || q.question_type === 'judgment') q.question_type = 'judge';
+    if (q.question_type === '填空') q.question_type = 'fill';
+    if (q.question_type === '简答' || q.question_type === 'essay') q.question_type = 'short';
+    if (typeof q.question_type !== 'string') q.question_type = 'single';
+
+    // Content: content, stem, question, title, 题干, 题目
+    q.content = findCi('', 'content', 'stem', 'question', 'title', '题干', '题目', 'text', 'problem');
+
+    // Options: options, choices, 选项, answers_list, alternatives
+    q.options = findCi([], 'options', 'choices', '选项', 'answers_list', 'alternatives', 'items', 'selection');
+    if (!Array.isArray(q.options) && typeof q.options === 'string') {
+        // Try to parse as JSON or split by common patterns
+        try { q.options = JSON.parse(q.options); } catch(e) {}
+        if (!Array.isArray(q.options)) q.options = [];
+    }
+
+    // Answer: answer, correct, correct_answer, key, 答案, right
+    q.answer = findCi('', 'answer', 'correct', 'correct_answer', 'key', '答案', 'right', 'truth');
+    if (q.answer === true) q.answer = '对';
+    if (q.answer === false) q.answer = '错';
+    q.answer = String(q.answer || '');
+
+    // Analysis: analysis, explanation, 解析, comment, note
+    q.analysis = findCi('', 'analysis', 'explanation', '解析', 'comment', 'note', 'detail');
+
+    // Difficulty: difficulty, level, 难度, diff
+    q.difficulty = parseInt(findCi(1, 'difficulty', 'level', '难度', 'diff', 'stars')) || 1;
+    if (q.difficulty < 1) q.difficulty = 1;
+    if (q.difficulty > 5) q.difficulty = 5;
+
+    // Source: source, origin, 来源
+    q.source = findCi('', 'source', 'origin', '来源');
+
+    return q;
+}
+
 function loadImportTab() {
     refreshCategories();
     populateCategorySelect('importCatSelect', false);
@@ -1344,8 +1418,8 @@ function renderImportPreview(questions) {
     var html = '<div class="list-group list-group-flush">';
     var limit = Math.min(questions.length, 50);
     for (var i = 0; i < limit; i++) {
-        var q = questions[i];
-        html += '<div class="list-group-item py-2"><small><strong>#' + (i+1) + '</strong> ' + getTypeBadge(q.question_type || 'single') + ' ' + truncate(q.content, 40) + '</small></div>';
+        var q = normalizeQuestion(questions[i]);
+        html += '<div class="list-group-item py-2"><small><strong>#' + (i+1) + '</strong> ' + getTypeBadge(q.question_type) + ' ' + truncate(q.content, 50) + '</small></div>';
     }
     if (questions.length > 50) html += '<div class="list-group-item py-2 text-center text-muted small">... 还有 ' + (questions.length - 50) + ' 道题目</div>';
     html += '</div>';
@@ -1385,16 +1459,18 @@ function doImport() {
 
         for (var i = 0; i < importQuestions.length; i++) {
             try {
-                var q = importQuestions[i];
+                var raw = importQuestions[i];
+                var q = normalizeQuestion(raw);
+                if (!q.content) { failed++; continue; }
                 questions.push({
                     id: Date.now() + i,
                     category_id: finalCatId,
-                    question_type: q.question_type || 'single',
-                    content: q.content || '',
-                    options: q.options || [],
-                    answer: q.answer || '',
-                    analysis: q.analysis || '',
-                    difficulty: q.difficulty || 1,
+                    question_type: q.question_type,
+                    content: q.content,
+                    options: q.options,
+                    answer: q.answer,
+                    analysis: q.analysis,
+                    difficulty: q.difficulty,
                     source: source || q.source || 'import',
                     created_at: now
                 });
