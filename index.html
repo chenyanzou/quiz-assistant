@@ -1097,13 +1097,32 @@ function viewQuestionDetail(qid) {
     new bootstrap.Modal(document.getElementById('questionDetailModal')).show();
 }
 
+function cleanupEmptyCategories() {
+    var questions = lsGet('quiz_questions', []);
+    var usedIds = {};
+    for (var i = 0; i < questions.length; i++) usedIds[questions[i].category_id] = true;
+    var cats = lsGet('quiz_categories', []);
+    var before = cats.length;
+    cats = cats.filter(function(c) { return usedIds[c.id]; });
+    if (cats.length < before) {
+        lsSet('quiz_categories', cats);
+        categoriesCache = cats;
+        return before - cats.length;
+    }
+    return 0;
+}
+
 function deleteQuestion(qid) {
     if (!confirmDialog('确定要删除此题目吗？此操作不可撤销。')) return;
     var questions = lsGet('quiz_questions', []);
     questions = questions.filter(function(q) { return q.id !== qid; });
     lsSet('quiz_questions', questions);
-    showToast('题目已删除');
+    var cleaned = cleanupEmptyCategories();
+    var msg = '题目已删除';
+    if (cleaned > 0) msg += '，已自动清理 ' + cleaned + ' 个空分类';
+    showToast(msg);
     loadQuestionBank(bankPage);
+    loadDashboard();
 }
 
 function clearCategoryQuestions() {
@@ -1142,6 +1161,7 @@ function clearCategoryQuestions() {
         wrongs = wrongs.filter(function(w) { return !deletedIds[w.question_id]; });
         lsSet('quiz_wrong', wrongs);
         showToast('已删除「' + catName + '」分类及 ' + targetQuestions.length + ' 道题目');
+        cleanupEmptyCategories();
     }
     document.getElementById('bankBulkInfo').textContent = '';
     loadQuestionBank(0);
