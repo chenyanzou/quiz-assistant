@@ -1133,13 +1133,15 @@ function clearCategoryQuestions() {
     } else {
         var remaining = questions.filter(function(q) { return q.category_id !== cid; });
         lsSet('quiz_questions', remaining);
+        // Delete the category itself
+        lsSet('quiz_categories', categoriesCache.filter(function(c) { return c.id !== cid; }));
         // Also remove wrong questions belonging to deleted questions
         var deletedIds = {};
         for (var i = 0; i < targetQuestions.length; i++) deletedIds[targetQuestions[i].id] = true;
         var wrongs = lsGet('quiz_wrong', []);
         wrongs = wrongs.filter(function(w) { return !deletedIds[w.question_id]; });
         lsSet('quiz_wrong', wrongs);
-        showToast('已删除「' + catName + '」分类下 ' + targetQuestions.length + ' 道题目');
+        showToast('已删除「' + catName + '」分类及 ' + targetQuestions.length + ' 道题目');
     }
     document.getElementById('bankBulkInfo').textContent = '';
     loadQuestionBank(0);
