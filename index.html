@@ -288,7 +288,7 @@ body {
     <div class="row g-2 mb-3 align-items-end">
         <div class="col-md-3"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="bankFilterCat"><option value="">全部分类</option></select></div>
         <div class="col-md-2"><label class="form-label small">题型</label><select class="form-select form-select-sm" id="bankFilterType"><option value="">全部题型</option><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
-        <div class="col-md-3"><label class="form-label small">搜索</label><input class="form-control form-control-sm" id="bankFilterSearch" placeholder="搜索题目内容..."></div>
+        <div class="col-md-3"><label class="form-label small">搜索</label><input class="form-control form-control-sm" id="bankFilterSearch" placeholder="搜题目/来源/解析/选项... 回车搜索" onkeydown="if(event.key==='Enter')loadQuestionBank()"></div>
         <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" onclick="loadQuestionBank()">搜索</button></div>
         <div class="col-md-2"><button class="btn btn-sm btn-success w-100" onclick="openQuestionModal()">+ 添加题目</button></div>
     </div>
@@ -976,6 +976,12 @@ function loadQuestionBank(page) {
 
     var questions = lsGet('quiz_questions', []);
 
+    // Build category map early (needed by search filter)
+    var catMap = {};
+    for (var i = 0; i < categoriesCache.length; i++) {
+        catMap[categoriesCache[i].id] = categoriesCache[i].name;
+    }
+
     // Filter
     var filtered = questions;
     if (catId && parseInt(catId) !== 0) {
@@ -986,33 +992,53 @@ function loadQuestionBank(page) {
         filtered = filtered.filter(function(q) { return q.question_type === type; });
     }
     if (search) {
-        filtered = filtered.filter(function(q) { return q.content.toLowerCase().indexOf(search) !== -1; });
+        filtered = filtered.filter(function(q) {
+            // Search in content, source, analysis
+            if (q.content.toLowerCase().indexOf(search) !== -1) return true;
+            if ((q.source || '').toLowerCase().indexOf(search) !== -1) return true;
+            if ((q.analysis || '').toLowerCase().indexOf(search) !== -1) return true;
+            // Search in category name
+            var cname = catMap[q.category_id] || '';
+            if (cname.toLowerCase().indexOf(search) !== -1) return true;
+            // Search in options
+            var opts = q.options || [];
+            for (var oi = 0; oi < opts.length; oi++) {
+                if (String(opts[oi]).toLowerCase().indexOf(search) !== -1) return true;
+            }
+            return false;
+        });
     }
 
     var total = filtered.length;
     var totalPages = Math.ceil(total / BANK_PAGE_SIZE) || 1;
 
+    var questionsEmpty = questions.length === 0;
     document.getElementById('bankPaginationInfo').textContent =
-        '共 ' + total + ' 道题目，第 ' + (page + 1) + '/' + totalPages + ' 页';
+        (search ? '搜索"' + search + '" ' : '') +
+        '共 ' + total + ' 道题目' +
+        (totalPages > 1 ? '，第 ' + (page + 1) + '/' + totalPages + ' 页' : '');
 
     var pagHtml = '';
-    pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page-1) + ')" ' + (page<=0?'disabled':'') + '>上一页</button>';
-    pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page+1) + ')" ' + (page>=totalPages-1?'disabled':'') + '>下一页</button>';
+    if (totalPages > 1) {
+        pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page-1) + ')" ' + (page<=0?'disabled':'') + '>上一页</button>';
+        pagHtml += '<button class="btn btn-outline-secondary btn-sm" onclick="loadQuestionBank(' + (page+1) + ')" ' + (page>=totalPages-1?'disabled':'') + '>下一页</button>';
+    }
     document.getElementById('bankPagination').innerHTML = pagHtml;
 
     var tbody = document.getElementById('bankTableBody');
 
     if (filtered.length === 0) {
-        showEmpty(tbody, '暂无题目，请先添加或导入题目');
+        if (questionsEmpty) {
+            showEmpty(tbody, '暂无题目，请先添加或导入题目');
+        } else if (search) {
+            showEmpty(tbody, '没有找到匹配 "<b>' + search + '</b>" 的题目<br><small class="text-muted">请尝试其他关键词，或清除搜索</small>');
+        } else {
+            showEmpty(tbody, '当前筛选条件没有匹配的题目');
+        }
         return;
     }
 
     var pageQuestions = filtered.slice(page * BANK_PAGE_SIZE, (page + 1) * BANK_PAGE_SIZE);
-
-    var catMap = {};
-    for (var i = 0; i < categoriesCache.length; i++) {
-        catMap[categoriesCache[i].id] = categoriesCache[i].name;
-    }
 
     var html = '';
     for (var i = 0; i < pageQuestions.length; i++) {
