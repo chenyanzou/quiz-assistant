@@ -978,7 +978,7 @@ function loadQuestionBank(page) {
 
     // Filter
     var filtered = questions;
-    if (catId) {
+    if (catId && parseInt(catId) !== 0) {
         var cid = parseInt(catId);
         filtered = filtered.filter(function(q) { return q.category_id === cid; });
     }
@@ -1018,7 +1018,19 @@ function loadQuestionBank(page) {
     for (var i = 0; i < pageQuestions.length; i++) {
         var q = pageQuestions[i];
         var catName = catMap[q.category_id] || '未知';
-        html += '<tr onclick="viewQuestionDetail(' + q.id + ')" class="clickable"><td>' + q.id + '</td><td><small>' + catName + '</small></td><td>' + getTypeBadge(q.question_type) + '</td><td><span class="content-preview">' + truncate(q.content, 50) + '</span></td><td><span class="difficulty-stars">' + difficultyStars(q.difficulty) + '</span></td><td onclick="event.stopPropagation()"><button class="btn btn-outline-primary btn-sm me-1" onclick="editQuestion(' + q.id + ')" title="编辑">&#x270F;</button><button class="btn btn-outline-danger btn-sm" onclick="deleteQuestion(' + q.id + ')" title="删除">&#x1F5D1;</button></td></tr>';
+        // Sanitize text for HTML
+        var safeContent = q.content.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        html += '<tr onclick="viewQuestionDetail(' + q.id + ')" class="clickable" style="cursor:pointer">' +
+            '<td>' + q.id + '</td>' +
+            '<td><span class="badge bg-secondary bg-opacity-10 text-secondary">' + (catName || '未知') + '</span></td>' +
+            '<td>' + getTypeBadge(q.question_type) + '</td>' +
+            '<td><span class="content-preview" title="' + safeContent + '">' + truncate(q.content, 60) + '</span></td>' +
+            '<td><span class="difficulty-stars">' + difficultyStars(q.difficulty) + '</span></td>' +
+            '<td style="white-space:nowrap" onclick="event.stopPropagation()">' +
+              '<button class="btn btn-sm btn-outline-primary me-1" onclick="viewQuestionDetail(' + q.id + ')" title="查看">&#x1F441;</button>' +
+              '<button class="btn btn-sm btn-outline-info me-1" onclick="editQuestion(' + q.id + ')" title="编辑">&#x270E;</button>' +
+              '<button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion(' + q.id + ')" title="删除">&#x1F5D1;</button>' +
+            '</td></tr>';
     }
     tbody.innerHTML = html;
 }
