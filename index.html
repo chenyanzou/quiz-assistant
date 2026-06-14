@@ -199,6 +199,38 @@ body {
     display: inline-block;
 }
 .difficulty-stars { color: var(--warning); letter-spacing: 2px; }
+
+/* ===== Answer Sheet ===== */
+.answer-sheet {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    max-height: 160px;
+    overflow-y: auto;
+}
+.answer-sheet .as-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: #fff;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+.answer-sheet .as-btn:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary); transform: scale(1.1); }
+.answer-sheet .as-btn.current { border-color: var(--primary); background: var(--primary); color: #fff; box-shadow: 0 0 0 3px rgba(13,110,253,.25); }
+.answer-sheet .as-btn.correct { border-color: var(--success); background: #d1fae5; color: #065f46; }
+.answer-sheet .as-btn.wrong { border-color: var(--danger); background: #fee2e2; color: #991b1b; }
+.answer-sheet .as-btn.answered { border-color: #94a3b8; background: #e2e8f0; color: #475569; }
+
 </style>
 </head>
 <body>
@@ -342,12 +374,14 @@ body {
 
     <div id="quizActive" style="display:none;">
         <div class="quiz-card fade-in">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold" id="quizProgressText">第 1/10 题</span>
                 <span class="fw-bold" id="quizScoreText">正确: 0 | 错误: 0</span>
                 <button class="btn btn-sm btn-outline-danger" onclick="endQuiz()">结束刷题</button>
             </div>
-            <div class="progress mb-3" style="height:8px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <div class="progress mb-2" style="height:8px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <!-- Answer Sheet -->
+            <div class="answer-sheet mb-3" id="quizAnswerSheet"></div>
             <div id="quizQuestionArea"></div>
         </div>
     </div>
@@ -1389,6 +1423,20 @@ function startQuiz() {
     renderCurrentQuestion();
 }
 
+function renderAnswerSheet() {
+    var html = '';
+    for (var i = 0; i < quizState.questions.length; i++) {
+        var qi = quizState.questions[i];
+        var cls = 'as-btn';
+        if (i === quizState.currentIndex) { cls += ' current'; }
+        else if (quizState.submitted[qi.id] && quizState.results[qi.id]) {
+            cls += quizState.results[qi.id].correct ? ' correct' : ' wrong';
+        }
+        html += '<div class="' + cls + '" onclick="jumpToQuestion(' + i + ')" title="第' + (i+1) + '题">' + (i+1) + '</div>';
+    }
+    document.getElementById('quizAnswerSheet').innerHTML = html;
+}
+
 function renderCurrentQuestion() {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) { finishQuiz(); return; }
@@ -1399,7 +1447,8 @@ function renderCurrentQuestion() {
     document.getElementById('quizProgressText').textContent = '第 ' + (idx+1) + '/' + total + ' 题';
     document.getElementById('quizScoreText').textContent =
         '正确: ' + quizState.correctCount + ' | 错误: ' + quizState.wrongCount;
-    document.getElementById('quizProgressBar').style.width = ((idx / total) * 100) + '%';
+    document.getElementById('quizProgressBar').style.width = (((idx + 1) / total) * 100) + '%';
+    renderAnswerSheet();
 
     var isSubmitted = quizState.submitted[q.id];
     var result = quizState.results[q.id];
@@ -1489,11 +1538,15 @@ function renderCurrentQuestion() {
     }
 
     // Action buttons
-    html += '<div class="d-flex gap-2 mt-3">';
+    html += '<div class="d-flex gap-2 mt-3 flex-wrap">';
+    // Previous button
+    html += '<button class="btn btn-outline-secondary" onclick="prevQuestion()" ' + (idx === 0 ? 'disabled' : '') + '>上一题</button>';
+    // Submit button
     if (!isSubmitted) {
         html += '<button class="btn btn-primary" onclick="submitQuizAnswer()">提交答案</button>';
     }
-    html += '<button class="btn ' + (isSubmitted ? 'btn-primary' : 'btn-outline-secondary') + '" onclick="nextQuestion()">' + (quizState.currentIndex >= quizState.questions.length - 1 ? '查看结果' : '下一题') + '</button>';
+    // Next button (always visible for navigation)
+    html += '<button class="btn ' + (isSubmitted ? 'btn-outline-primary' : 'btn-outline-secondary') + '" onclick="nextQuestion()">' + (quizState.currentIndex >= quizState.questions.length - 1 ? '查看结果' : '下一题') + '</button>';
     html += '</div>';
 
     document.getElementById('quizQuestionArea').innerHTML = html;
@@ -1549,11 +1602,6 @@ function submitQuizAnswer() {
 }
 
 function nextQuestion() {
-    var q = quizState.questions[quizState.currentIndex];
-    if (!quizState.submitted[q.id]) {
-        showToast('请先提交答案', 'warning');
-        return;
-    }
     if (quizState.currentIndex >= quizState.questions.length - 1) {
         finishQuiz();
         return;
@@ -1562,9 +1610,30 @@ function nextQuestion() {
     renderCurrentQuestion();
 }
 
+function prevQuestion() {
+    if (quizState.currentIndex <= 0) return;
+    quizState.currentIndex--;
+    renderCurrentQuestion();
+}
+
+function jumpToQuestion(idx) {
+    if (idx < 0 || idx >= quizState.questions.length) return;
+    quizState.currentIndex = idx;
+    renderCurrentQuestion();
+}
+
 function finishQuiz() {
     document.getElementById('quizActive').style.display = 'none';
     document.getElementById('quizSummary').style.display = 'block';
+
+    // Count unsubmitted as wrong
+    for (var i = 0; i < quizState.questions.length; i++) {
+        var qi = quizState.questions[i];
+        if (!quizState.submitted[qi.id]) {
+            quizState.wrongCount++;
+            quizState.results[qi.id] = { correct: false, correct_answer: qi.answer, analysis: qi.analysis || '' };
+        }
+    }
 
     var total = quizState.questions.length;
     var correct = quizState.correctCount;
@@ -1598,9 +1667,7 @@ function finishQuiz() {
 }
 
 function endQuiz() {
-    if (confirm('确定要结束刷题吗？当前进度将丢失。')) {
-        finishQuiz();
-    }
+    finishQuiz();
 }
 
 function resetQuiz() {
@@ -2096,7 +2163,9 @@ function loadStatsHistory(records) {
 // ============================================================
 function autoPopulate() {
     var cats = lsGet('quiz_categories', null);
-    if (cats !== null && cats.length > 0) return; // Already populated
+    var qs  = lsGet('quiz_questions', null);
+    // Only populate if no categories AND no questions exist
+    if (cats !== null && cats.length > 0 && qs !== null && qs.length > 0) return;
 
     // Create default category
     var catId = Date.now();
