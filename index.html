@@ -1306,76 +1306,103 @@ var importQuestions = [];
 
 // Normalize JSON field names from various formats
 function normalizeQuestion(item) {
-    // Find the actual key in the object (case-insensitive)
-    function find(obj, keys) {
-        for (var i = 0; i < obj.length; i++) {
-            for (var k = 0; k < keys.length; k++) {
-                if (obj[i] !== undefined && obj[i] !== null && typeof obj[i] === 'object' && keys[k] in obj[i]) {
-                    return obj[i][keys[k]];
-                }
-            }
-        }
-        // Also check top-level
-        for (var k = 0; k < keys.length; k++) {
-            if (item[keys[k]] !== undefined) return item[keys[k]];
+    if (!item || typeof item !== 'object') return { content: '', options: [], answer: '', question_type: 'single', difficulty: 1, analysis: '', source: '' };
+
+    // Lowercase all keys for case-insensitive matching
+    var raw = {};
+    var keys = Object.keys(item);
+    for (var i = 0; i < keys.length; i++) { raw[keys[i].toLowerCase()] = item[keys[i]]; }
+
+    // Helper: try each candidate key, return first non-empty match
+    function pick(/* candidate keys... */) {
+        for (var i = 0; i < arguments.length; i++) {
+            var v = raw[arguments[i].toLowerCase()];
+            if (v !== undefined && v !== null && v !== '') return v;
         }
         return undefined;
     }
-    // Also search by lowercase
-    function findCi(defaultVal) {
-        var ks = Object.keys(item);
-        for (var i = 0; i < arguments.length; i++) {
-            for (var k = 0; k < ks.length; k++) {
-                if (ks[k].toLowerCase() === arguments[i].toLowerCase()) {
-                    return item[ks[k]];
-                }
-            }
+
+    // ── Type ──
+    var t = String(pick('question_type','questiontype','qtype','type','题型','类别') || '').toLowerCase();
+    var qtype = 'single';
+    if (t === 'multi' || t === 'multiple' || t === 'multiple_choice' || t === 'checkbox' ||
+        t === '多选' || t === '多选题' || t === '多选题') qtype = 'multi';
+    else if (t === 'judge' || t === 'judgment' || t === '判断' || t === '判断题' || t === 'tf') qtype = 'judge';
+    else if (t === 'fill' || t === '填空' || t === '填空题' || t === 'blank') qtype = 'fill';
+    else if (t === 'short' || t === 'essay' || t === '简答' || t === '简答题' || t === '问答') qtype = 'short';
+    else if (t === 'code' || t === '编程' || t === '程序设计') qtype = 'short';
+
+    // ── Content / Stem ──
+    var content = pick('content','stem','question','title','题干','题目','text','problem','description','描述','试题','试题内容','题目内容','question_text','题干内容');
+
+    // ── Options / Choices ──
+    var options = pick('options','choices','选项','answers_list','alternatives','items','selection','selections','答案选项','choices_list');
+    if (!Array.isArray(options)) {
+        if (typeof options === 'string') {
+            try {
+                var parsed = JSON.parse(options);
+                if (Array.isArray(parsed)) options = parsed;
+            } catch(e) {}
         }
-        return defaultVal;
+    }
+    if (!Array.isArray(options)) {
+        // Check for A/B/C/D keys in the object
+        var abcdOpts = [];
+        for (var ab = 0; ab < 26; ab++) {
+            var letter = String.fromCharCode(65 + ab);
+            var val = raw[letter.toLowerCase()] || raw[letter];
+            if (val !== undefined && val !== null) abcdOpts.push(String(val));
+            else break;
+        }
+        if (abcdOpts.length >= 2) options = abcdOpts;
+    }
+    if (!Array.isArray(options)) options = [];
+
+    // ── Answer ──
+    var answer = pick('answer','correct','correct_answer','key','答案','right','truth','正确答案','参考答​案','answer_text','correctanswer');
+    if (answer === true) answer = '对';
+    if (answer === false) answer = '错';
+    answer = String(answer || '');
+
+    // ── Analysis ──
+    var analysis = pick('analysis','explanation','解析','comment','note','detail','explain','解答','解析内容','题目解析');
+    analysis = String(analysis || '');
+
+    // ── Difficulty ──
+    var diff = parseInt(pick('difficulty','level','难度','diff','stars','difficult')) || 1;
+    if (diff < 1) diff = 1; if (diff > 5) diff = 5;
+
+    // ── Source ──
+    var src = pick('source','origin','来源','出处');
+    src = String(src || '');
+
+    // ── Fallback: if content still empty, try ANY string-valued field ──
+    if (!content) {
+        for (var j = 0; j < keys.length; j++) {
+            var v = item[keys[j]];
+            if (typeof v === 'string' && v.length > 5) { content = v; break; }
+        }
     }
 
-    var q = {};
-    // Type: type, question_type, qtype, 题型
-    q.question_type = findCi('single', 'type', 'question_type', 'qtype', 'questionType', '题型');
-    if (q.question_type === 'choice') q.question_type = 'single';
-    if (q.question_type === 'mc') q.question_type = 'single';
-    if (q.question_type === 'multiple_choice') q.question_type = 'single';
-    if (q.question_type === '单选') q.question_type = 'single';
-    if (q.question_type === '多选') q.question_type = 'multi';
-    if (q.question_type === '判断' || q.question_type === 'judgment') q.question_type = 'judge';
-    if (q.question_type === '填空') q.question_type = 'fill';
-    if (q.question_type === '简答' || q.question_type === 'essay') q.question_type = 'short';
-    if (typeof q.question_type !== 'string') q.question_type = 'single';
-
-    // Content: content, stem, question, title, 题干, 题目
-    q.content = findCi('', 'content', 'stem', 'question', 'title', '题干', '题目', 'text', 'problem');
-
-    // Options: options, choices, 选项, answers_list, alternatives
-    q.options = findCi([], 'options', 'choices', '选项', 'answers_list', 'alternatives', 'items', 'selection');
-    if (!Array.isArray(q.options) && typeof q.options === 'string') {
-        // Try to parse as JSON or split by common patterns
-        try { q.options = JSON.parse(q.options); } catch(e) {}
-        if (!Array.isArray(q.options)) q.options = [];
+    // ── Auto-detect: if options is non-empty and no type set, it's likely single/multi ──
+    if (options.length >= 2 && qtype === 'single') {
+        // Could be multi — check answer format (e.g. "AB" or "A,B" suggests multi)
+        if (answer.length >= 2 && /^[a-dA-D,，]+$/.test(answer)) qtype = 'multi';
+    }
+    if (options.length === 0 && (qtype === 'single' || qtype === 'multi')) {
+        // Single/multi without options — treat as fill/short
+        if (qtype === 'multi') qtype = 'fill';
     }
 
-    // Answer: answer, correct, correct_answer, key, 答案, right
-    q.answer = findCi('', 'answer', 'correct', 'correct_answer', 'key', '答案', 'right', 'truth');
-    if (q.answer === true) q.answer = '对';
-    if (q.answer === false) q.answer = '错';
-    q.answer = String(q.answer || '');
-
-    // Analysis: analysis, explanation, 解析, comment, note
-    q.analysis = findCi('', 'analysis', 'explanation', '解析', 'comment', 'note', 'detail');
-
-    // Difficulty: difficulty, level, 难度, diff
-    q.difficulty = parseInt(findCi(1, 'difficulty', 'level', '难度', 'diff', 'stars')) || 1;
-    if (q.difficulty < 1) q.difficulty = 1;
-    if (q.difficulty > 5) q.difficulty = 5;
-
-    // Source: source, origin, 来源
-    q.source = findCi('', 'source', 'origin', '来源');
-
-    return q;
+    return {
+        question_type: qtype,
+        content: content || '',
+        options: options,
+        answer: answer,
+        analysis: analysis,
+        difficulty: diff,
+        source: src
+    };
 }
 
 function loadImportTab() {
@@ -1415,6 +1442,18 @@ function renderImportPreview(questions) {
         preview.innerHTML = '<div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>无题目数据</p></div>';
         return;
     }
+
+    // Show field mapping diagnostics for first question
+    var first = normalizeQuestion(questions[0]);
+    var keysFound = Object.keys(questions[0]).slice(0, 10).join(', ');
+    var diagHtml = '<div class="alert alert-info py-1 mb-2 small">' +
+        '<strong>检测到字段:</strong> ' + (keysFound || '(无)') + '<br>' +
+        '<strong>映射结果:</strong> 题型=' + first.question_type +
+        ' | 题干=' + (first.content ? truncate(first.content, 30) : '<span class=text-danger>未找到!</span>') +
+        ' | 选项数=' + first.options.length +
+        ' | 答案=' + (first.answer || '<span class=text-danger>空</span>') + '</div>';
+    preview.innerHTML = diagHtml;
+
     var html = '<div class="list-group list-group-flush">';
     var limit = Math.min(questions.length, 50);
     for (var i = 0; i < limit; i++) {
@@ -1655,7 +1694,11 @@ function renderCurrentQuestion() {
     var html = '';
     html += '<div class="mb-3"><span class="fw-bold">' + (idx+1) + '.</span> ' + getTypeBadge(q.question_type) + ' ' + q.content + '</div>';
 
-    if (q.question_type === 'single' && options.length > 0) {
+    // For single/multi types without options — fall back to text input
+    var hasOpts = options.length > 0;
+    var showAsText = (q.question_type === 'single' || q.question_type === 'multi') && !hasOpts;
+
+    if (q.question_type === 'single' && hasOpts) {
         html += '<div class="mb-3">';
         for (var i = 0; i < options.length; i++) {
             var optLabel = String.fromCharCode(65 + i);
@@ -1761,13 +1804,18 @@ function submitQuizAnswer() {
     if (!q) return;
 
     var userAnswer = '';
-    if (q.question_type === 'multi') {
+    var opts = q.options || [];
+    var hasOpts = opts.length > 0;
+
+    if (q.question_type === 'multi' && hasOpts) {
         var cbs = document.querySelectorAll('.quiz-multi-cb:checked');
         var vals = [];
         cbs.forEach(function(cb) { vals.push(cb.value); });
         vals.sort();
         userAnswer = vals.join('');
-    } else if (q.question_type === 'fill' || q.question_type === 'short') {
+    } else if (q.question_type === 'fill' || q.question_type === 'short' ||
+               (q.question_type === 'single' && !hasOpts) ||
+               (q.question_type === 'multi' && !hasOpts)) {
         userAnswer = document.getElementById('quizTextInput') ? document.getElementById('quizTextInput').value.trim() : '';
     } else {
         userAnswer = quizState.answers[q.id] || '';
