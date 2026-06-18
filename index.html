@@ -402,9 +402,32 @@ body {
     .table-container { overflow-x: auto; }
 }
 
-/* ═══ Tab Content ═══ */
+/* ═══ Tab Content / AI Sub-tabs / Filter Bar ═══ */
 .tab-content > .tab-pane { display: none; }
 .tab-content > .tab-pane.active { display: block; }
+.ai-sub-pane { display: none; }
+.ai-sub-pane.active { display: block; }
+#aiSubTabs .nav-link {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    color: var(--slate-500);
+    border-radius: 12px;
+    padding: 0.5rem 1.1rem;
+    transition: all var(--transition);
+}
+#aiSubTabs .nav-link:hover { color: var(--amber-dark); background: var(--amber-light); }
+#aiSubTabs .nav-link.active { color: #fff; background: linear-gradient(135deg, var(--purple), #A78BFA); }
+#aiSubTabs { gap: 4px; }
+
+.filter-bar {
+    background: rgba(255,255,255,.78);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem 0.7rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(217,119,6,.08);
+    box-shadow: var(--shadow-sm);
+}
 .content-preview { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
 .clickable { cursor: pointer; }
 .fade-in { animation: fadeIn 0.35s ease; }
@@ -454,10 +477,10 @@ body {
 <div class="tab-pane fade show active" id="tab-dashboard">
     <h5 class="section-title">概览</h5>
     <div class="row g-3 mb-4" id="dashStats">
-        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-primary" id="dashTotalQuestions">-</div><div class="stat-label">总题量</div></div><div class="stat-icon bg-primary bg-opacity-10 text-primary">&#x1F4DA;</div></div></div></div>
-        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-danger" id="dashWrongCount">-</div><div class="stat-label">错题数</div></div><div class="stat-icon bg-danger bg-opacity-10 text-danger">&#x2717;</div></div></div></div>
-        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-success" id="dashAccuracy">-</div><div class="stat-label">近期正确率</div></div><div class="stat-icon bg-success bg-opacity-10 text-success">&#x2713;</div></div></div></div>
-        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value text-info" id="dashCategories">-</div><div class="stat-label">分类数</div></div><div class="stat-icon bg-info bg-opacity-10 text-info">&#x1F4C1;</div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" style="color:var(--amber-dark)" id="dashTotalQuestions">-</div><div class="stat-label">总题量</div></div><div class="stat-icon" style="background:rgba(217,119,6,.12);color:var(--amber)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" style="color:var(--red)" id="dashWrongCount">-</div><div class="stat-label">错题数</div></div><div class="stat-icon" style="background:rgba(239,68,68,.10);color:var(--red)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" style="color:var(--green)" id="dashAccuracy">-</div><div class="stat-label">近期正确率</div></div><div class="stat-icon" style="background:rgba(16,185,129,.10);color:var(--green)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div></div></div></div>
+        <div class="col-6 col-md-3"><div class="card card-stat p-3"><div class="d-flex justify-content-between align-items-start"><div><div class="stat-value" style="color:var(--purple)" id="dashCategories">-</div><div class="stat-label">分类数</div></div><div class="stat-icon" style="background:rgba(139,92,246,.10);color:var(--purple)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div></div></div></div>
     </div>
 
     <h5 class="section-title mt-3">题库分类</h5>
@@ -470,10 +493,12 @@ body {
 <!-- TAB 2: Question Bank             -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-bank">
-    <div class="row g-2 mb-3 align-items-end">
-        <div class="col-md-3"><label class="form-label small">分类</label><select class="form-select form-select-sm" id="bankFilterCat"><option value="">全部分类</option></select></div>
-        <div class="col-md-2"><label class="form-label small">题型</label><select class="form-select form-select-sm" id="bankFilterType"><option value="">全部题型</option><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
-        <div class="col-md-3"><label class="form-label small">搜索</label><input class="form-control form-control-sm" id="bankFilterSearch" placeholder="搜题目/来源/解析/选项... 回车搜索" onkeydown="if(event.key==='Enter')loadQuestionBank()"></div>
+    <h5 class="section-title">题库管理</h5>
+    <div class="filter-bar">
+    <div class="row g-2 mb-2 align-items-end">
+        <div class="col-md-3"><label class="form-label small fw-semibold">分类</label><select class="form-select form-select-sm" id="bankFilterCat"><option value="">全部分类</option></select></div>
+        <div class="col-md-2"><label class="form-label small fw-semibold">题型</label><select class="form-select form-select-sm" id="bankFilterType"><option value="">全部题型</option><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
+        <div class="col-md-3"><label class="form-label small fw-semibold">搜索</label><input class="form-control form-control-sm" id="bankFilterSearch" placeholder="搜题目/来源/解析/选项... 回车搜索" onkeydown="if(event.key==='Enter')loadQuestionBank()"></div>
         <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" onclick="loadQuestionBank()">搜索</button></div>
         <div class="col-md-2"><button class="btn btn-sm btn-success w-100" onclick="openQuestionModal()">+ 添加题目</button></div>
     </div>
@@ -483,6 +508,7 @@ body {
         <button class="btn btn-sm btn-outline-danger" onclick="clearAllQuestions()" title="删除全部题库、分类、错题、记录">清空全部题库</button>
         <span class="text-muted small ms-2 align-self-center" id="bankBulkInfo"></span>
     </div>
+    </div><!-- /filter-bar -->
 
     <div class="d-flex justify-content-between align-items-center mb-2">
         <small class="text-muted" id="bankPaginationInfo"></small>
@@ -526,9 +552,11 @@ body {
             </div>
         </div>
         <div class="col-lg-5">
-            <h6 class="mb-2">导入预览 (<span id="importPreviewCount">0</span> 道题目)</h6>
-            <div style="max-height:500px;overflow-y:auto;" id="importPreview">
-                <div class="empty-state"><div class="empty-icon">&#x1F4C4;</div><p>请先选择 .json 文件</p></div>
+            <div class="card card-stat p-3" style="max-height:540px;overflow:hidden">
+                <h6 class="fw-bold mb-2" style="color:var(--brown-dark)">导入预览（<span id="importPreviewCount">0</span> 题）</h6>
+                <div style="max-height:460px;overflow-y:auto;" id="importPreview">
+                    <div class="empty-state"><div class="empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><p>请先选择 .json 文件</p></div>
+                </div>
             </div>
         </div>
     </div>
@@ -582,9 +610,9 @@ body {
             <div style="font-size:4rem;" id="quizSummaryEmoji">&#x1F389;</div>
             <h3 class="mb-2">刷题完成！</h3>
             <div class="row g-3 mt-3">
-                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-primary" id="quizSummaryTotal">0</div><div class="stat-label">总题数</div></div></div>
-                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-success" id="quizSummaryCorrect">0</div><div class="stat-label">正确</div></div></div>
-                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value text-danger" id="quizSummaryWrong">0</div><div class="stat-label">错误</div></div></div>
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value" style="color:var(--purple)" id="quizSummaryTotal">0</div><div class="stat-label">总题数</div></div></div>
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value" style="color:var(--green)" id="quizSummaryCorrect">0</div><div class="stat-label">正确</div></div></div>
+                <div class="col-4"><div class="card card-stat p-3"><div class="stat-value" style="color:var(--red)" id="quizSummaryWrong">0</div><div class="stat-label">错误</div></div></div>
             </div>
             <h4 class="mt-3" id="quizSummaryScore"></h4>
             <button class="btn btn-primary mt-2" onclick="resetQuiz()">再来一次</button>
@@ -596,6 +624,7 @@ body {
 <!-- TAB 5: Wrong Book                -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-wrong">
+    <h5 class="section-title">错题本</h5>
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div class="d-flex gap-2 align-items-center">
             <select class="form-select form-select-sm" id="wrongFilterCat" onchange="loadWrongBook()" style="width:auto;"><option value="0">全部分类</option></select>
