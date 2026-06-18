@@ -50,12 +50,44 @@
 }
 * { box-sizing: border-box; }
 body {
-    background: linear-gradient(160deg, var(--cream) 0%, #FFF5E6 40%, #FFF0DB 100%);
+    background:
+        /* layer 1: subtle dot grid */
+        radial-gradient(circle, rgba(217,119,6,.06) 1px, transparent 1px),
+        /* layer 2: large soft amber blob top-right */
+        radial-gradient(ellipse 50% 50% at 85% 15%, rgba(251,191,36,.10) 0%, transparent 70%),
+        /* layer 3: soft orange blob bottom-left */
+        radial-gradient(ellipse 40% 45% at 15% 80%, rgba(249,115,22,.08) 0%, transparent 70%),
+        /* layer 4: cream gradient base */
+        linear-gradient(165deg, var(--cream) 0%, #FFF8ED 30%, #FFF3E0 65%, #FEF0D9 100%);
+    background-size:
+        24px 24px,
+        100% 100%,
+        100% 100%,
+        100% 100%;
+    background-attachment: fixed;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
     font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
     color: var(--slate-700);
     min-height: 100vh;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+}
+
+/* Floating decorative blobs behind content */
+body::before {
+    content: '';
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: -1;
+    background:
+        /* blob 1: amber circle top-left */
+        radial-gradient(circle 280px at 8% 12%, rgba(251,191,36,.12) 0%, transparent 100%),
+        /* blob 2: orange-amber mid-right */
+        radial-gradient(circle 220px at 92% 55%, rgba(249,115,22,.09) 0%, transparent 100%),
+        /* blob 3: warm gold bottom-center */
+        radial-gradient(circle 350px at 50% 90%, rgba(217,119,6,.07) 0%, transparent 100%),
+        /* blob 4: soft cream top-center */
+        radial-gradient(circle 200px at 55% 8%, rgba(254,243,199,.15) 0%, transparent 100%);
+    background-repeat: no-repeat;
 }
 
 /* ═══ Navbar ═══ */
