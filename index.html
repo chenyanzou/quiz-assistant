@@ -1191,11 +1191,25 @@ function loadDashboard() {
     // Compute per-category stats
     var catStats = {};
     for (var i = 0; i < categories.length; i++) {
-        catStats[categories[i].id] = { count: 0, correct: 0, attempts: 0, accuracy: 0 };
+        catStats[categories[i].id] = { count: 0, correct: 0, attempts: 0, accuracy: 0, tried: 0 };
     }
     for (var i = 0; i < questions.length; i++) {
         var cid = questions[i].category_id;
         if (catStats[cid]) catStats[cid].count++;
+    }
+    // Track which questions have been attempted (unique) from quiz_tried
+    var triedArr = lsGet('quiz_tried', []);
+    var triedQids = {};
+    for (var i = 0; i < triedArr.length; i++) { triedQids[triedArr[i]] = true; }
+    // Also include wrong book questions
+    var wrongs = lsGet('quiz_wrong', []);
+    for (var i = 0; i < wrongs.length; i++) { triedQids[wrongs[i].question_id] = true; }
+    // Count tried per category
+    for (var i = 0; i < questions.length; i++) {
+        var q = questions[i];
+        if (triedQids[q.id] && catStats[q.category_id]) {
+            catStats[q.category_id].tried++;
+        }
     }
     for (var i = 0; i < records.length; i++) {
         var cid2 = records[i].category_id;
@@ -1213,8 +1227,22 @@ function loadDashboard() {
     var cardsHtml = '';
     for (var i = 0; i < categories.length; i++) {
         var cat = categories[i];
-        var info = catStats[cat.id] || { count: 0, accuracy: 0 };
-        cardsHtml += '<div class="col-md-6 col-lg-4"><div class="card card-category"><div class="category-header"><div class="category-name">' + cat.name + '</div><div class="category-desc">' + (cat.description || '暂无描述') + '</div></div><div class="card-body"><div class="d-flex justify-content-between mb-2"><span class="text-muted small">题目数量</span><span class="fw-bold">' + info.count + '</span></div><div class="d-flex justify-content-between mb-2"><span class="text-muted small">正确率</span><span class="fw-bold">' + info.accuracy + '%</span></div><button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="quickStartQuiz(' + cat.id + ')">开始刷题</button></div></div></div>';
+        var info = catStats[cat.id] || { count: 0, accuracy: 0, tried: 0 };
+        var pct = info.count > 0 ? Math.round(info.tried / info.count * 100) : 0;
+        var barColor = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--slate-400)';
+        cardsHtml += '<div class="col-md-6 col-lg-4"><div class="card card-category">' +
+            '<div class="category-header"><div class="category-name">' + cat.name +
+            '</div><div class="category-desc">' + (cat.description || '暂无描述') + '</div></div>' +
+            '<div class="card-body">' +
+            '<div class="row text-center mb-2">' +
+            '<div class="col-4"><div class="fw-bold" style="color:var(--amber-dark);font-size:1.2rem">' + info.count + '</div><div class="stat-label">总题数</div></div>' +
+            '<div class="col-4"><div class="fw-bold" style="color:var(--purple);font-size:1.2rem">' + info.tried + '</div><div class="stat-label">已刷</div></div>' +
+            '<div class="col-4"><div class="fw-bold" style="color:' + (info.accuracy >= 80 ? 'var(--green)' : info.accuracy >= 50 ? 'var(--amber)' : 'var(--red)') + ';font-size:1.2rem">' + (info.attempts > 0 ? info.accuracy + '%' : '-') + '</div><div class="stat-label">正确率</div></div>' +
+            '</div>' +
+            '<div class="progress mb-2" style="height:6px"><div class="progress-bar" style="width:' + pct + '%;background:' + barColor + '"></div></div>' +
+            '<div class="text-muted small text-center mb-2">完成度 ' + pct + '%</div>' +
+            '<button class="btn btn-sm btn-outline-primary w-100" onclick="quickStartQuiz(' + cat.id + ')">开始刷题</button>' +
+            '</div></div></div>';
     }
     cardsDiv.innerHTML = cardsHtml;
 }
@@ -1411,6 +1439,7 @@ function clearCategoryQuestions() {
         lsSet('quiz_categories', []);
         lsSet('quiz_wrong', []);
         lsSet('quiz_records', []);
+        lsSet('quiz_tried', []);
         showToast('已清空全部题库（' + targetQuestions.length + ' 道题目）');
     } else {
         var remaining = questions.filter(function(q) { return q.category_id !== cid; });
@@ -1441,6 +1470,7 @@ function clearAllQuestions() {
     lsSet('quiz_categories', []);
     lsSet('quiz_wrong', []);
     lsSet('quiz_records', []);
+    lsSet('quiz_tried', []);
     showToast('已清空全部数据（' + questions.length + ' 道题目）');
     document.getElementById('bankBulkInfo').textContent = '';
     loadQuestionBank(0);
@@ -2106,6 +2136,10 @@ function submitQuizAnswer() {
         correct_answer: q.answer,
         analysis: q.analysis || ''
     };
+
+    // Track tried question for dashboard progress
+    var tried = lsGet('quiz_tried', []);
+    if (tried.indexOf(q.id) === -1) { tried.push(q.id); lsSet('quiz_tried', tried); }
 
     renderCurrentQuestion();
 }
