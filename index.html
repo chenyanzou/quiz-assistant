@@ -402,6 +402,12 @@ body {
     .table-container { overflow-x: auto; }
 }
 
+/* ═══ Charts ═══ */
+.chart-card { overflow: hidden; }
+.chart-card .section-title { margin-bottom: 0.5rem; }
+.chart-wrap { width: 100%; height: 200px; position: relative; overflow: hidden; }
+.chart-wrap canvas { width: 100% !important; height: 100% !important; }
+
 /* ═══ Tab Content / AI Sub-tabs / Filter Bar ═══ */
 .tab-content > .tab-pane { display: none; }
 .tab-content > .tab-pane.active { display: block; }
@@ -758,21 +764,21 @@ body {
     <!-- Row 2: 3 Charts — Bar, Donut, Line -->
     <div class="row g-3 mb-4">
         <div class="col-lg-4">
-            <div class="card card-stat p-4">
+            <div class="card card-stat p-4 chart-card">
                 <h5 class="section-title">正确率对比</h5>
-                <div style="height:200px;"><canvas id="statsBarChart"></canvas></div>
+                <div class="chart-wrap"><canvas id="statsBarChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card card-stat p-4">
+            <div class="card card-stat p-4 chart-card">
                 <h5 class="section-title">题型分布</h5>
-                <div style="height:200px;"><canvas id="statsTypeChart"></canvas></div>
+                <div class="chart-wrap"><canvas id="statsTypeChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card card-stat p-4">
+            <div class="card card-stat p-4 chart-card">
                 <h5 class="section-title">得分趋势</h5>
-                <div style="height:200px;"><canvas id="statsLineChart"></canvas></div>
+                <div class="chart-wrap"><canvas id="statsLineChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -2598,7 +2604,7 @@ function loadStats() {
             }]
         },
         options: {
-            responsive: true,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
@@ -2631,7 +2637,7 @@ function loadStats() {
             datasets: [{ data: typeData, backgroundColor: typeBg, borderColor: '#fff', borderWidth: 2 }]
         },
         options: {
-            responsive: true,
+            responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { family: 'Nunito', size: 11 } } }
             }
@@ -2663,7 +2669,7 @@ function loadStats() {
             }]
         },
         options: {
-            responsive: true,
+            responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
