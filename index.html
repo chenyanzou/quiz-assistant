@@ -50,6 +50,7 @@
 }
 * { box-sizing: border-box; }
 body {
+    --bg-image: none;
     background:
         /* Layer 0: slow-cycling warm gradient (animated) */
         linear-gradient(200deg, #FEF7EC 0%, #FFF3E0 18%, #FEF9F0 36%, #FFF5EB 54%, #FEF7EC 72%, #FFF3E0 90%, #FEF9F0 100%);
@@ -64,6 +65,19 @@ body {
     position: relative;
     overflow-x: hidden;
 }
+
+body.custom-bg {
+    animation: none;
+    background:
+        var(--bg-image) center/cover no-repeat fixed,
+        linear-gradient(200deg, rgba(254,247,236,.88) 0%, rgba(255,243,224,.88) 50%, rgba(254,249,240,.88) 100%);
+    background-size: cover, 400% 400%;
+    background-attachment: fixed, fixed;
+}
+body.custom-bg::before,
+body.custom-bg::after,
+body.custom-bg .geometry-overlay,
+body.custom-bg .noise-overlay { display: none; }
 
 @keyframes bgShift {
     0%   { background-position: 0% 50%; }
@@ -586,6 +600,27 @@ body::after {
     <h5 class="section-title mt-3">题库分类</h5>
     <div class="row g-3" id="dashCategoryCards">
         <div class="col-12"><div class="loading-overlay"><div class="spinner-border text-primary"></div></div></div>
+    </div>
+
+    <h5 class="section-title mt-4">主题设置</h5>
+    <div class="card card-stat p-3 mb-3" id="themeCard">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small fw-semibold">背景图片URL</label>
+                <div class="input-group input-group-sm">
+                    <input class="form-control" id="bgUrlInput" placeholder="输入图片URL地址..." onkeydown="if(event.key==='Enter')applyBgUrl()">
+                    <button class="btn btn-outline-primary" onclick="applyBgUrl()">应用</button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">或上传图片</label>
+                <input class="form-control form-control-sm" type="file" id="bgFileInput" accept="image/*" onchange="applyBgFile(event)">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-outline-secondary w-100" onclick="resetBg()">恢复默认</button>
+            </div>
+            <div class="col-md-2" id="bgStatus" style="font-size:0.8rem;color:var(--slate-500)"></div>
+        </div>
     </div>
 </div>
 
@@ -1347,6 +1382,68 @@ function quickStartQuiz(catId) {
     setTimeout(function() {
         document.getElementById('quizCategory').value = catId;
     }, 100);
+}
+
+// ============================================================
+// Background theme settings
+// ============================================================
+function applyBgUrl() {
+    var url = document.getElementById('bgUrlInput').value.trim();
+    if (!url) { showToast('请输入图片URL', 'warning'); return; }
+    setCustomBg(url);
+    showToast('背景已更新');
+}
+
+function applyBgFile(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('图片不能超过5MB', 'warning'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        // Compress large images via canvas
+        var img = new Image();
+        img.onload = function() {
+            var w = img.width, h = img.height;
+            var maxW = 1200;
+            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            setCustomBg(dataUrl);
+            showToast('背景已更新');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function setCustomBg(url) {
+    document.body.style.setProperty('--bg-image', 'url(' + url + ')');
+    document.body.classList.add('custom-bg');
+    lsSet('quiz_bg', url);
+    document.getElementById('bgStatus').textContent = '已自定义';
+    document.getElementById('bgUrlInput').value = url;
+}
+
+function resetBg() {
+    document.body.classList.remove('custom-bg');
+    document.body.style.removeProperty('--bg-image');
+    lsSet('quiz_bg', null);
+    document.getElementById('bgUrlInput').value = '';
+    document.getElementById('bgFileInput').value = '';
+    document.getElementById('bgStatus').textContent = '默认主题';
+    showToast('已恢复默认背景');
+}
+
+function loadBgSetting() {
+    var saved = lsGet('quiz_bg', null);
+    if (saved) {
+        setCustomBg(saved);
+    } else {
+        document.getElementById('bgStatus').textContent = '默认主题';
+    }
 }
 
 // ============================================================
@@ -2993,6 +3090,7 @@ function init() {
     autoPopulate();
     document.getElementById('tab-dashboard').classList.add('show', 'active');
     refreshCategories();
+    loadBgSetting();
     loadDashboard();
     loadQuizSetup();
     loadImportTab();
