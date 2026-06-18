@@ -2472,16 +2472,17 @@ async function doAiVariant() {
     resultDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2">AI 正在生成变体题...</span></div>';
     saveArea.style.display = 'none';
 
-    var systemPrompt = '你是一位出题专家。请根据以下题目，生成一道同类型、同知识点但内容不同的变体题。请严格按照以下格式输出：\n题干：[题目内容]\n选项：[A. xxx  B. xxx  C. xxx  D. xxx]\n答案：[正确答案]\n解析：[题目解析]\n请用中文回答。';
-    var userMessage = '原题类型：' + (TYPE_LABELS[question.question_type] || question.question_type) + '\n原题内容：' + question.content;
+    var systemPrompt = '你是一位出题专家。请根据以下题目，生成一道同类型、同知识点的变体题（举一反三）。\n\n【重要规则】\n1. 题干必须和原题完全不同，不能只是换几个词\n2. 必须考察相同的知识点，但使用不同的场景/角度/表述\n3. 选项内容必须和原题不同\n4. 严格按以下格式输出：\n\n题干：[全新的题目内容]\n选项：A. [选项A]  B. [选项B]  C. [选项C]  D. [选项D]\n答案：[正确答案]\n解析：[详细解析]\n\n请用中文回答。';
+    var userMessage = '请基于以下原题生成一道全新的变体题（不能和原题相同！）：\n\n原题类型：' + (TYPE_LABELS[question.question_type] || question.question_type) + '\n原题内容（供参考，不能复制）：' + question.content;
     if (question.options && question.options.length > 0) {
-        userMessage += '\n原题选项：\n';
+        userMessage += '\n原题选项（供参考，不能复用）：\n';
         for (var i = 0; i < question.options.length; i++) {
             userMessage += String.fromCharCode(65 + i) + '. ' + question.options[i] + '\n';
         }
     }
     userMessage += '原题答案：' + question.answer;
     if (question.analysis) userMessage += '\n原题解析：' + question.analysis;
+    userMessage += '\n\n再次强调：生成的变体题题干、选项必须和原题完全不同！';
 
     var result = await aiChat(systemPrompt, userMessage);
     resultDiv.innerHTML = result || 'AI 未返回结果';
