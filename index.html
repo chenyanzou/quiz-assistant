@@ -748,25 +748,68 @@ body {
 <!-- TAB 7: Stats                     -->
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-stats">
+
+    <!-- Row 1: Per-category stat cards -->
     <h5 class="section-title">分类统计</h5>
     <div class="row g-3 mb-4" id="statsCategoryCards">
         <div class="col-12"><div class="loading-overlay"><div class="spinner-border text-primary"></div></div></div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-lg-7">
+    <!-- Row 2: 3 Charts — Bar, Donut, Line -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
             <div class="card card-stat p-4">
-                <h5 class="section-title">正确率统计</h5>
-                <canvas id="statsAccuracyChart" height="250"></canvas>
+                <h5 class="section-title">正确率对比</h5>
+                <canvas id="statsBarChart" height="220"></canvas>
             </div>
         </div>
-        <div class="col-lg-5">
+        <div class="col-lg-4">
             <div class="card card-stat p-4">
-                <h6 class="mb-3">刷题历史</h6>
-                <div id="statsHistory" style="max-height:350px;overflow-y:auto;">
+                <h5 class="section-title">题型分布</h5>
+                <canvas id="statsTypeChart" height="220"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card card-stat p-4">
+                <h5 class="section-title">得分趋势</h5>
+                <canvas id="statsLineChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: AI Analysis -->
+    <h5 class="section-title">AI 学习分析</h5>
+    <div class="card card-stat p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <p class="text-muted small mb-0">基于你的刷题数据，AI 分析薄弱环节并给出学习建议</p>
+            <button class="btn btn-sm btn-primary" id="aiStatsBtn" onclick="doAiStatsAnalysis()">
+                <span id="aiStatsBtnText">AI 分析</span>
+            </button>
+        </div>
+        <div id="aiStatsResult" class="ai-response" style="display:none;min-height:80px;"></div>
+        <div id="aiStatsPlaceholder" class="text-center text-muted py-3">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p class="mt-2 mb-0">点击"AI 分析"按钮，让 AI 帮你分析答题情况</p>
+        </div>
+    </div>
+
+    <!-- Row 4: History + Summary -->
+    <h5 class="section-title">刷题历史</h5>
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card card-stat p-4" style="max-height:420px;overflow:hidden">
+                <div id="statsHistory" style="max-height:370px;overflow-y:auto;">
                     <div class="loading-overlay"><div class="spinner-border spinner-border-sm text-primary"></div></div>
                 </div>
-                <div class="mt-2" id="statsSummary"></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card card-stat p-4">
+                <h6 class="fw-bold mb-3" style="color:var(--amber-dark)">总体概览</h6>
+                <div id="statsSummary"></div>
+                <hr class="my-3" style="border-color:rgba(217,119,6,.12)">
+                <h6 class="fw-bold mb-2" style="color:var(--amber-dark)">薄弱知识点</h6>
+                <div id="statsWeakAreas" class="text-muted small">先进行 AI 分析以获取建议</div>
             </div>
         </div>
     </div>
@@ -2475,7 +2518,14 @@ function saveParsedGenerated() {
 // ============================================================
 // Tab 7: Stats
 // ============================================================
-var statsChart = null;
+var statsCharts = [];
+
+function destroyAllCharts() {
+    for (var i = 0; i < statsCharts.length; i++) {
+        if (statsCharts[i]) { statsCharts[i].destroy(); }
+    }
+    statsCharts = [];
+}
 
 function loadStats() {
     refreshCategories();
@@ -2488,110 +2538,257 @@ function loadStats() {
         showEmpty(cardsContainer, '暂无统计数据，请先刷题');
         document.getElementById('statsHistory').innerHTML = '<div class="empty-state"><p>暂无刷题记录</p></div>';
         document.getElementById('statsSummary').innerHTML = '';
-        destroyChart();
+        destroyAllCharts();
         return;
     }
 
-    // Compute per-category stats
+    // ── Compute per-category stats ──
     var catStatsMap = {};
     for (var i = 0; i < categoriesCache.length; i++) {
         catStatsMap[categoriesCache[i].id] = {
             category_name: categoriesCache[i].name,
-            total_questions: 0,
-            completed: 0,
-            total_correct: 0,
-            total_attempts: 0,
-            accuracy: 0
+            total_questions: 0, completed: 0,
+            total_correct: 0, total_attempts: 0, accuracy: 0
         };
     }
-
     for (var i = 0; i < questions.length; i++) {
         var cid = questions[i].category_id;
         if (catStatsMap[cid]) catStatsMap[cid].total_questions++;
     }
-
     for (var i = 0; i < records.length; i++) {
-        var rcid = records[i].category_id;
-        if (catStatsMap[rcid]) {
-            catStatsMap[rcid].completed++;
-            catStatsMap[rcid].total_correct += records[i].correct || 0;
-            catStatsMap[rcid].total_attempts += records[i].total || 0;
+        var rc = records[i];
+        if (catStatsMap[rc.category_id]) {
+            catStatsMap[rc.category_id].completed++;
+            catStatsMap[rc.category_id].total_correct += rc.correct || 0;
+            catStatsMap[rc.category_id].total_attempts += rc.total || 0;
         }
     }
-
     for (var k in catStatsMap) {
         var cs = catStatsMap[k];
         cs.accuracy = cs.total_attempts > 0 ? Math.round(cs.total_correct / cs.total_attempts * 100) : 0;
     }
-
     var statsArray = [];
     for (var k in catStatsMap) statsArray.push(catStatsMap[k]);
 
-    // Category stat cards
+    // ── Category stat cards ──
     var cardsHtml = '';
     for (var i = 0; i < statsArray.length; i++) {
         var s = statsArray[i];
-        cardsHtml += '<div class="col-md-4 col-lg-3"><div class="card card-stat p-3"><div class="fw-bold small">' + s.category_name + '</div><div class="d-flex justify-content-between mt-2"><div><div class="stat-value text-primary" style="font-size:1.2rem">' + s.total_questions + '</div><div class="stat-label" style="font-size:0.7rem">总题数</div></div><div><div class="stat-value text-info" style="font-size:1.2rem">' + s.completed + '</div><div class="stat-label" style="font-size:0.7rem">练习次数</div></div><div><div class="stat-value text-success" style="font-size:1.2rem">' + s.accuracy + '%</div><div class="stat-label" style="font-size:0.7rem">正确率</div></div></div></div></div>';
+        cardsHtml += '<div class="col-md-4 col-lg-3"><div class="card card-stat p-3"><div class="fw-bold small">' + s.category_name + '</div><div class="d-flex justify-content-between mt-2"><div><div class="stat-value" style="font-size:1.2rem;color:var(--amber-dark)">' + s.total_questions + '</div><div class="stat-label" style="font-size:0.7rem">总题数</div></div><div><div class="stat-value" style="font-size:1.2rem;color:var(--purple)">' + s.completed + '</div><div class="stat-label" style="font-size:0.7rem">练习次数</div></div><div><div class="stat-value" style="font-size:1.2rem;color:var(--green)">' + s.accuracy + '%</div><div class="stat-label" style="font-size:0.7rem">正确率</div></div></div></div></div>';
     }
     cardsContainer.innerHTML = cardsHtml || '<div class="col-12"><div class="empty-state"><p>暂无分类统计</p></div></div>';
 
-    // Chart
+    // ── Destroy old charts ──
+    destroyAllCharts();
+
+    // ── Chart 1: Bar — Accuracy per category ──
     var labels = statsArray.map(function(s) { return s.category_name; });
     var accuracies = statsArray.map(function(s) { return s.accuracy; });
-    renderChart(labels, accuracies);
-
-    // History
-    loadStatsHistory(records);
-
-    // Summary
-    var totalQ = questions.length;
-    var totalDone = 0, totalCorrectAll = 0, totalAttemptsAll = 0;
-    for (var i = 0; i < records.length; i++) {
-        totalDone++;
-        totalCorrectAll += records[i].correct || 0;
-        totalAttemptsAll += records[i].total || 0;
-    }
-    var avgAcc = totalAttemptsAll > 0 ? Math.round(totalCorrectAll / totalAttemptsAll * 100) : 0;
-    document.getElementById('statsSummary').innerHTML =
-        '<div class="alert alert-info py-2 mb-0"><strong>总计:</strong> ' + totalQ + ' 道题目 | ' + totalDone + ' 次练习 | 平均正确率 ' + avgAcc + '%</div>';
-}
-
-function renderChart(labels, accuracies) {
-    destroyChart();
-    var ctx = document.getElementById('statsAccuracyChart').getContext('2d');
-    statsChart = new Chart(ctx, {
+    var barCtx = document.getElementById('statsBarChart').getContext('2d');
+    statsCharts.push(new Chart(barCtx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: '正确率 (%)',
                 data: accuracies,
-                backgroundColor: accuracies.map(function(a) { return a >= 80 ? 'rgba(16,185,129,0.65)' : a >= 60 ? 'rgba(251,191,36,0.65)' : 'rgba(239,68,68,0.55)'; }),
+                backgroundColor: accuracies.map(function(a) { return a >= 80 ? 'rgba(16,185,129,0.6)' : a >= 60 ? 'rgba(251,191,36,0.6)' : 'rgba(239,68,68,0.5)'; }),
                 borderColor: accuracies.map(function(a) { return a >= 80 ? '#10B981' : a >= 60 ? '#D97706' : '#EF4444'; }),
-                borderWidth: 2,
-                borderRadius: 10
+                borderWidth: 2, borderRadius: 8
             }]
         },
         options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) { return '正确率: ' + ctx.raw + '%'; }
-                    }
-                }
-            },
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
             scales: {
-                y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } }, title: { display: true, text: '正确率', color: '#78350F', font: { family: 'Nunito' } }, grid: { color: 'rgba(217,119,6,.08)' } },
-                x: { title: { display: true, text: '题目分类', color: '#78350F', font: { family: 'Nunito' } }, grid: { display: false }, ticks: { color: '#78350F' } }
+                y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
+                x: { grid: { display: false }, ticks: { color: '#78350F', font: { size: 10 } } }
             }
         }
-    });
+    }));
+
+    // ── Chart 2: Donut — Question type distribution ──
+    var typeCount = { single: 0, multi: 0, judge: 0, fill: 0, short: 0 };
+    var typeColors = { single: '#D97706', multi: '#8B5CF6', judge: '#F97316', fill: '#10B981', short: '#3B82F6' };
+    var typeCN = { single: '单选', multi: '多选', judge: '判断', fill: '填空', short: '简答' };
+    for (var i = 0; i < questions.length; i++) {
+        var qt = questions[i].question_type || 'single';
+        if (typeCount[qt] !== undefined) typeCount[qt]++;
+    }
+    var typeLabels = [], typeData = [], typeBg = [];
+    for (var tk in typeCount) {
+        if (typeCount[tk] > 0) {
+            typeLabels.push(typeCN[tk] || tk);
+            typeData.push(typeCount[tk]);
+            typeBg.push(typeColors[tk] || '#D97706');
+        }
+    }
+    var typeCtx = document.getElementById('statsTypeChart').getContext('2d');
+    statsCharts.push(new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: typeLabels,
+            datasets: [{ data: typeData, backgroundColor: typeBg, borderColor: '#fff', borderWidth: 2 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { family: 'Nunito', size: 11 } } }
+            }
+        }
+    }));
+
+    // ── Chart 3: Line — Score trend over time ──
+    var recent20 = records.slice().reverse().slice(0, 20);
+    var lineLabels = [], lineData = [];
+    for (var r = recent20.length - 1; r >= 0; r--) {
+        lineLabels.push('#' + (recent20.length - r));
+        lineData.push(recent20[r].score !== undefined ? recent20[r].score : 0);
+    }
+    var lineCtx = document.getElementById('statsLineChart').getContext('2d');
+    statsCharts.push(new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: lineLabels,
+            datasets: [{
+                label: '得分',
+                data: lineData,
+                fill: true,
+                backgroundColor: 'rgba(217,119,6,.08)',
+                borderColor: '#D97706',
+                borderWidth: 2.5,
+                pointBackgroundColor: lineData.map(function(s) { return s >= 80 ? '#10B981' : s >= 60 ? '#FBBF24' : '#EF4444'; }),
+                pointRadius: 4,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+            }
+        }
+    }));
+
+    // ── History / Summary / Weak areas ──
+    loadStatsHistory(records);
+    var totalQ = questions.length;
+    var totalDone = records.length;
+    var totalCorrectAll = 0, totalAttemptsAll = 0;
+    for (var i = 0; i < records.length; i++) {
+        totalCorrectAll += records[i].correct || 0;
+        totalAttemptsAll += records[i].total || 0;
+    }
+    var avgAcc = totalAttemptsAll > 0 ? Math.round(totalCorrectAll / totalAttemptsAll * 100) : 0;
+
+    var summaryHtml = '';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">总题目数</span><span class="fw-bold">' + totalQ + '</span></div>';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">练习次数</span><span class="fw-bold">' + totalDone + '</span></div>';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">累计答题</span><span class="fw-bold">' + totalAttemptsAll + '</span></div>';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">答对</span><span class="fw-bold" style="color:var(--green)">' + totalCorrectAll + '</span></div>';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">答错</span><span class="fw-bold" style="color:var(--red)">' + (totalAttemptsAll - totalCorrectAll) + '</span></div>';
+    summaryHtml += '<div class="d-flex justify-content-between py-2"><span class="text-muted small">平均正确率</span><span class="fw-bold" style="color:' + (avgAcc >= 80 ? 'var(--green)' : avgAcc >= 60 ? 'var(--amber)' : 'var(--red)') + ';font-size:1.2rem">' + avgAcc + '%</span></div>';
+    document.getElementById('statsSummary').innerHTML = summaryHtml;
 }
 
-function destroyChart() {
-    if (statsChart) { statsChart.destroy(); statsChart = null; }
+async function doAiStatsAnalysis() {
+    var btn = document.getElementById('aiStatsBtn');
+    var btnText = document.getElementById('aiStatsBtnText');
+    var resultDiv = document.getElementById('aiStatsResult');
+    var placeholder = document.getElementById('aiStatsPlaceholder');
+
+    btn.disabled = true;
+    btnText.textContent = '分析中...';
+    resultDiv.style.display = 'block';
+    placeholder.style.display = 'none';
+    resultDiv.innerHTML = '<div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm" style="color:var(--amber)"></div><span class="ms-2">AI 正在分析你的答题数据...</span></div>';
+
+    // Gather stats data
+    var questions = lsGet('quiz_questions', []);
+    var records = lsGet('quiz_records', []);
+    var wrongs = lsGet('quiz_wrong', []);
+
+    // Build per-category summary
+    var catSummary = {};
+    for (var i = 0; i < categoriesCache.length; i++) {
+        var c = categoriesCache[i];
+        catSummary[c.id] = { name: c.name, total: 0, correct: 0, attempts: 0, wrongTopics: [] };
+    }
+    for (var i = 0; i < questions.length; i++) {
+        var cid2 = questions[i].category_id;
+        if (catSummary[cid2]) catSummary[cid2].total++;
+    }
+    for (var i = 0; i < records.length; i++) {
+        var rc2 = records[i];
+        if (catSummary[rc2.category_id]) {
+            catSummary[rc2.category_id].correct += rc2.correct || 0;
+            catSummary[rc2.category_id].attempts += rc2.total || 0;
+        }
+    }
+    // Collect wrong question topics
+    for (var i = 0; i < wrongs.length; i++) {
+        var w = wrongs[i];
+        if (catSummary[w.category_id] && w.content) {
+            catSummary[w.category_id].wrongTopics.push(w.content.substring(0, 60));
+        }
+    }
+
+    var overallCorrect = 0, overallTotal = 0;
+    for (var i = 0; i < records.length; i++) { overallCorrect += records[i].correct || 0; overallTotal += records[i].total || 0; }
+    var overallAcc = overallTotal > 0 ? Math.round(overallCorrect / overallTotal * 100) : 0;
+
+    // Build prompt
+    var userMsg = '以下是学生的刷题数据，请分析学习情况并给出建议：\n\n';
+    userMsg += '总题目数: ' + questions.length + '，总练习次数: ' + records.length + '，平均正确率: ' + overallAcc + '%\n\n';
+    userMsg += '各分类统计:\n';
+    for (var k in catSummary) {
+        var cs = catSummary[k];
+        var acc = cs.attempts > 0 ? Math.round(cs.correct / cs.attempts * 100) : 0;
+        userMsg += '- ' + cs.name + ': ' + cs.total + '题，正确率 ' + acc + '%';
+        if (cs.wrongTopics.length > 0) userMsg += '，错题示例: ' + cs.wrongTopics.slice(0, 3).join('；');
+        userMsg += '\n';
+    }
+
+    userMsg += '\n请从以下角度分析（用中文回复，尽量简洁，控制在400字以内）：';
+    userMsg += '\n1. 总体学习状态评估（1-2句话）';
+    userMsg += '\n2. 最薄弱的环节是什么（具体分类/知识点）';
+    userMsg += '\n3. 给出 3 条具体学习建议';
+
+    var systemPrompt = '你是一位专业的C++数据结构与算法课程助教。根据学生的刷题统计数据，分析其学习情况，找出薄弱环节，给出有针对性的学习建议。风格要鼓励但实事求是。';
+
+    try {
+        var analysis = await aiChat(systemPrompt, userMsg);
+        resultDiv.innerHTML = '<div style="line-height:1.9;white-space:pre-wrap">' + analysis + '</div>';
+
+        // Update weak areas sidebar
+        updateWeakAreas(wrongs);
+    } catch (e) {
+        resultDiv.innerHTML = '<div class="alert alert-danger py-2 mb-0">分析失败: ' + e.message + '</div>';
+    }
+
+    btn.disabled = false;
+    btnText.textContent = '重新分析';
+}
+
+function updateWeakAreas(wrongs) {
+    var weakDiv = document.getElementById('statsWeakAreas');
+    if (!wrongs || wrongs.length === 0) {
+        weakDiv.innerHTML = '<span class="text-muted">暂无错题数据</span>';
+        return;
+    }
+    // Count wrongs by category
+    var catWrong = {};
+    for (var i = 0; i < wrongs.length; i++) {
+        var cn = wrongs[i].category_name || '未知';
+        catWrong[cn] = (catWrong[cn] || 0) + 1;
+    }
+    var html = '';
+    for (var k in catWrong) {
+        html += '<div class="d-flex justify-content-between py-1"><span>' + k + '</span><span class="badge bg-danger bg-opacity-10 text-danger">' + catWrong[k] + ' 题</span></div>';
+    }
+    weakDiv.innerHTML = html || '<span class="text-muted">暂无数据</span>';
 }
 
 function loadStatsHistory(records) {
