@@ -760,19 +760,19 @@ body {
         <div class="col-lg-4">
             <div class="card card-stat p-4">
                 <h5 class="section-title">正确率对比</h5>
-                <canvas id="statsBarChart" height="220"></canvas>
+                <div style="height:200px;"><canvas id="statsBarChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-4">
             <div class="card card-stat p-4">
                 <h5 class="section-title">题型分布</h5>
-                <canvas id="statsTypeChart" height="220"></canvas>
+                <div style="height:200px;"><canvas id="statsTypeChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-4">
             <div class="card card-stat p-4">
                 <h5 class="section-title">得分趋势</h5>
-                <canvas id="statsLineChart" height="220"></canvas>
+                <div style="height:200px;"><canvas id="statsLineChart"></canvas></div>
             </div>
         </div>
     </div>
@@ -2598,7 +2598,7 @@ function loadStats() {
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
@@ -2631,7 +2631,7 @@ function loadStats() {
             datasets: [{ data: typeData, backgroundColor: typeBg, borderColor: '#fff', borderWidth: 2 }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true,
             plugins: {
                 legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, font: { family: 'Nunito', size: 11 } } }
             }
@@ -2663,7 +2663,7 @@ function loadStats() {
             }]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true,
             plugins: { legend: { display: false } },
             scales: {
                 y: { beginAtZero: false, min: 0, max: 100, ticks: { callback: function(v) { return v + '%'; } }, grid: { color: 'rgba(217,119,6,.08)' } },
