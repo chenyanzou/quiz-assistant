@@ -712,21 +712,34 @@ body::after {
         <div class="quiz-card fade-in">
             <h5 class="section-title">刷题设置</h5>
             <div class="row g-3">
-                <div class="col-md-6"><label class="form-label">刷题模式</label>
-                    <select class="form-select" id="quizMode">
+                <div class="col-md-4"><label class="form-label">刷题模式</label>
+                    <select class="form-select" id="quizMode" onchange="onQuizModeChange()">
                         <option value="sequential">顺序刷题</option>
                         <option value="random">随机刷题</option>
                         <option value="exam">模拟考试</option>
                         <option value="wrong_only">错题重做</option>
                     </select>
                 </div>
-                <div class="col-md-6"><label class="form-label">选择分类</label>
+                <div class="col-md-4"><label class="form-label">选择分类</label>
                     <select class="form-select" id="quizCategory"><option value="0">全部分类</option></select>
                 </div>
-                <div class="col-md-6"><label class="form-label">题目数量</label>
-                    <input class="form-control" type="number" id="quizCount" value="10" min="1" max="100">
+                <div class="col-md-4"><label class="form-label">筛选题型</label>
+                    <select class="form-select" id="quizQuestionType">
+                        <option value="">全部题型</option>
+                        <option value="single">仅单选</option>
+                        <option value="multi">仅多选</option>
+                        <option value="judge">仅判断</option>
+                        <option value="fill">仅填空</option>
+                        <option value="short">仅简答</option>
+                    </select>
                 </div>
-                <div class="col-md-6 d-flex align-items-end">
+                <div class="col-md-4" id="quizCountWrap"><label class="form-label">题目数量</label>
+                    <input class="form-control" type="number" id="quizCount" value="10" min="1" max="200">
+                </div>
+                <div class="col-md-4" id="quizTimeWrap" style="display:none"><label class="form-label">考试时间（分钟）</label>
+                    <input class="form-control" type="number" id="quizTimeLimit" value="30" min="1" max="180" placeholder="分钟">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
                     <button class="btn btn-primary btn-lg w-100" onclick="startQuiz()">开始刷题</button>
                 </div>
             </div>
@@ -735,9 +748,12 @@ body::after {
 
     <div id="quizActive" style="display:none;">
         <div class="quiz-card fade-in">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold" id="quizProgressText">第 1/10 题</span>
-                <span class="fw-bold" id="quizScoreText">正确: 0 | 错误: 0</span>
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <div class="d-flex gap-3 align-items-center">
+                    <span class="fw-bold" id="quizProgressText">第 1/10 题</span>
+                    <span class="fw-bold" id="quizScoreText">正确: 0 | 错误: 0</span>
+                    <span id="quizTimer" style="display:none;color:var(--red);font-weight:700;font-size:0.9rem">剩余 30:00</span>
+                </div>
                 <button class="btn btn-sm btn-outline-danger" onclick="endQuiz()">结束刷题</button>
             </div>
             <div class="progress mb-1" style="height:6px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
@@ -2075,6 +2091,61 @@ function loadQuizSetup() {
     refreshCategories();
     populateCategorySelect('quizCategory', true);
     showResumeBanner();
+    onQuizModeChange();
+}
+
+var quizTimerInterval = null;
+
+function onQuizModeChange() {
+    var mode = document.getElementById('quizMode').value;
+    // Show/hide time input only for exam mode
+    document.getElementById('quizTimeWrap').style.display = (mode === 'exam') ? 'block' : 'none';
+    document.getElementById('quizCountWrap').style.display = (mode === 'exam') ? 'none' : 'block';
+    // When exam mode selected, use all available questions by default
+    if (mode === 'exam') {
+        var questions = lsGet('quiz_questions', []);
+        var catId = parseInt(document.getElementById('quizCategory').value) || 0;
+        if (catId !== 0) questions = questions.filter(function(q) { return q.category_id === catId; });
+        var qtype = document.getElementById('quizQuestionType').value;
+        if (qtype) questions = questions.filter(function(q) { return q.question_type === qtype; });
+        document.getElementById('quizCount').value = Math.min(questions.length, 200);
+    }
+}
+
+function startQuizTimer() {
+    if (!quizState.timeLimit || quizState.timeLimit <= 0) return;
+    quizState.timeLeft = quizState.timeLimit * 60;
+    var timerEl = document.getElementById('quizTimer');
+    timerEl.style.display = 'inline';
+    updateTimerDisplay();
+    clearInterval(quizTimerInterval);
+    quizTimerInterval = setInterval(function() {
+        quizState.timeLeft--;
+        updateTimerDisplay();
+        if (quizState.timeLeft <= 0) {
+            clearInterval(quizTimerInterval);
+            quizTimerInterval = null;
+            showToast('考试时间到！', 'warning');
+            finishQuiz();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    var mins = Math.floor(quizState.timeLeft / 60);
+    var secs = quizState.timeLeft % 60;
+    document.getElementById('quizTimer').textContent = '剩余 ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    if (quizState.timeLeft < 300) {
+        document.getElementById('quizTimer').style.color = '#DC2626';
+    } else if (quizState.timeLeft < 600) {
+        document.getElementById('quizTimer').style.color = '#D97706';
+    }
+}
+
+function stopQuizTimer() {
+    clearInterval(quizTimerInterval);
+    quizTimerInterval = null;
+    document.getElementById('quizTimer').style.display = 'none';
 }
 
 function checkAnswerLocal(question, userAnswer) {
@@ -2128,7 +2199,9 @@ function addToWrongBook(question, userAnswer) {
 function startQuiz() {
     var mode = document.getElementById('quizMode').value;
     var categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
+    var questionType = document.getElementById('quizQuestionType').value;
     var count = parseInt(document.getElementById('quizCount').value) || 10;
+    var timeLimit = parseInt(document.getElementById('quizTimeLimit').value) || 0;
 
     document.getElementById('quizSetup').style.display = 'none';
     document.getElementById('quizActive').style.display = 'block';
@@ -2140,6 +2213,11 @@ function startQuiz() {
     // Filter by category
     if (categoryId !== 0) {
         questions = questions.filter(function(q) { return q.category_id === categoryId; });
+    }
+
+    // Filter by question type (works for ALL modes)
+    if (questionType) {
+        questions = questions.filter(function(q) { return q.question_type === questionType; });
     }
 
     // Filter by wrong only
@@ -2175,10 +2253,14 @@ function startQuiz() {
         submitted: {},
         mode: mode,
         categoryId: categoryId,
-        active: true
+        active: true,
+        timeLimit: timeLimit,
+        timeLeft: timeLimit * 60,
+        timerId: null
     };
 
     renderCurrentQuestion();
+    startQuizTimer();
 }
 
 function renderAnswerSheet() {
@@ -2394,6 +2476,7 @@ function jumpToQuestion(idx) {
 }
 
 function finishQuiz() {
+    stopQuizTimer();
     document.getElementById('quizActive').style.display = 'none';
     document.getElementById('quizSummary').style.display = 'block';
 
@@ -2444,6 +2527,7 @@ function endQuiz() {
 }
 
 function resetQuiz() {
+    stopQuizTimer();
     quizState = { questions: [], currentIndex: 0, correctCount: 0, wrongCount: 0, answers: {}, results: {}, submitted: {}, mode: 'sequential', categoryId: 0, active: false };
     document.getElementById('quizSetup').style.display = 'block';
     document.getElementById('quizActive').style.display = 'none';
@@ -2457,6 +2541,7 @@ function resetQuiz() {
 // ── Save & Exit ──
 function saveQuizAndExit() {
     if (!quizState.active) return;
+    stopQuizTimer();
     var saveData = {
         questions: quizState.questions,
         currentIndex: quizState.currentIndex,
