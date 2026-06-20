@@ -2496,20 +2496,18 @@ function resumeQuiz() {
     showToast('已恢复刷题进度');
 }
 
-// ── Edit current question ──
-var _quizEditOverridden = false;
-var _quizOrigSave = null;
-function _restoreQuizSave() {
-    if (_quizEditOverridden) {
-        saveQuestion = _quizOrigSave;
-        _quizEditOverridden = false;
-        _quizOrigSave = null;
-        document.getElementById('questionEditModal').removeEventListener('hidden.bs.modal', _restoreQuizSave);
-    }
-}
+var _quizEditQid = null;
+var _quizEditIdx = -1;
+
 function editQuizQuestion() {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
+
+    // Store which question we're editing so the post-save hook can find it
+    _quizEditQid = q.id;
+    _quizEditIdx = quizState.currentIndex;
+
+    // Find full question in localStorage
     var questions = lsGet('quiz_questions', []);
     var fullQ = null;
     for (var i = 0; i < questions.length; i++) {
@@ -2517,6 +2515,7 @@ function editQuizQuestion() {
     }
     if (!fullQ) { showToast('题目未找到', 'error'); return; }
 
+    // Populate modal fields (reuse existing editQuestion logic)
     document.getElementById('qeId').value = fullQ.id;
     document.getElementById('questionEditTitle').textContent = '编辑题目';
     document.getElementById('qeContent').value = fullQ.content;
@@ -2532,39 +2531,39 @@ function editQuizQuestion() {
     document.getElementById('qeCategory').value = fullQ.category_id;
     onQeTypeChange();
 
-    // Safely override saveQuestion, with cleanup on modal dismiss
-    _restoreQuizSave();
-    _quizOrigSave = saveQuestion;
-    _quizEditOverridden = true;
-    var editQid = q.id;
-    var editIdx = quizState.currentIndex;
-
-    saveQuestion = function() {
-        _quizOrigSave();                        // do the actual save (DB + close modal)
-        _restoreQuizSave();                     // restore immediately
-        // Refresh current question in quiz
-        var updated = lsGet('quiz_questions', []);
-        for (var i = 0; i < updated.length; i++) {
-            if (updated[i].id === editQid) {
-                var qi = quizState.questions[editIdx];
-                if (qi) {
-                    qi.content       = updated[i].content;
-                    qi.options       = updated[i].options || [];
-                    qi.answer        = updated[i].answer;
-                    qi.analysis      = updated[i].analysis || '';
-                    qi.question_type = updated[i].question_type || qi.question_type;
-                    qi.difficulty    = updated[i].difficulty || qi.difficulty;
-                }
-                break;
-            }
-        }
-        renderCurrentQuestion();
-        showToast('题目已更新，继续答题');
-    };
-    // If user cancels the modal without saving, still restore
-    document.getElementById('questionEditModal').addEventListener('hidden.bs.modal', _restoreQuizSave, {once: true});
-
+    // Setup a one-time post-save hook on modal close
     var modalEl = document.getElementById('questionEditModal');
+    var afterSave = function() {
+        modalEl.removeEventListener('hidden.bs.modal', afterSave);
+        // After a short delay let saveQuestion finish writing to localStorage
+        setTimeout(function() {
+            if (_quizEditQid === null) return; // already handled
+
+            var updatedQuestions = lsGet('quiz_questions', []);
+            var updatedQ = null;
+            for (var i = 0; i < updatedQuestions.length; i++) {
+                if (updatedQuestions[i].id === _quizEditQid) { updatedQ = updatedQuestions[i]; break; }
+            }
+            if (!updatedQ) { _quizEditQid = null; return; }
+
+            var qi = quizState.questions[_quizEditIdx];
+            if (!qi) { _quizEditQid = null; return; }
+
+            qi.content       = updatedQ.content;
+            qi.options       = updatedQ.options || [];
+            qi.answer        = updatedQ.answer;
+            qi.analysis      = updatedQ.analysis || '';
+            qi.question_type = updatedQ.question_type || qi.question_type;
+            qi.difficulty    = updatedQ.difficulty || qi.difficulty;
+
+            _quizEditQid = null;
+            _quizEditIdx = -1;
+            renderCurrentQuestion();
+            showToast('题目已更新，继续答题');
+        }, 100);
+    };
+    modalEl.addEventListener('hidden.bs.modal', afterSave, {once: true});
+
     var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     modal.show();
 }
