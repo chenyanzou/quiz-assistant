@@ -739,10 +739,28 @@ body::after {
                 <div class="col-md-4" id="quizTimeWrap" style="display:none"><label class="form-label">考试时间（分钟）</label>
                     <input class="form-control" type="number" id="quizTimeLimit" value="30" min="1" max="180" placeholder="分钟">
                 </div>
-                <div class="col-md-4 d-flex align-items-end">
-                    <button class="btn btn-primary btn-lg w-100" onclick="startQuiz()">开始刷题</button>
-                </div>
             </div>
+
+        <!-- Per-type count panel -- exam mode only -->
+        <div class="card card-stat p-3 mt-3" id="examTypeCountsPanel" style="display:none;background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="fw-bold mb-0" style="color:var(--amber-dark)">各题型数量设置</h6>
+                <small class="text-muted" id="examTotalInfo">总计 0 题</small>
+            </div>
+            <div class="row g-2">
+                <div class="col"><label class="form-label small fw-semibold">单选</label><input type="number" class="form-control form-control-sm exam-type-count" id="examSingleCount" value="10" min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">多选</label><input type="number" class="form-control form-control-sm exam-type-count" id="examMultiCount"  value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">判断</label><input type="number" class="form-control form-control-sm exam-type-count" id="examJudgeCount" value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">填空</label><input type="number" class="form-control form-control-sm exam-type-count" id="examFillCount"  value="3"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">简答</label><input type="number" class="form-control form-control-sm exam-type-count" id="examShortCount" value="2"  min="0" max="100" onchange="updateExamTotal()"></div>
+            </div>
+        </div>
+
+        <div class="row g-3 mt-2">
+            <div class="col-md-12">
+                <button class="btn btn-primary btn-lg w-100" onclick="startQuiz()">开始刷题</button>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -2096,19 +2114,37 @@ function loadQuizSetup() {
 
 var quizTimerInterval = null;
 
+function updateExamTotal() {
+    var sum = 0;
+    document.querySelectorAll('.exam-type-count').forEach(function(el) { sum += parseInt(el.value) || 0; });
+    document.getElementById('examTotalInfo').textContent = '总计 ' + sum + ' 题';
+}
+
 function onQuizModeChange() {
     var mode = document.getElementById('quizMode').value;
     // Show/hide time input only for exam mode
     document.getElementById('quizTimeWrap').style.display = (mode === 'exam') ? 'block' : 'none';
     document.getElementById('quizCountWrap').style.display = (mode === 'exam') ? 'none' : 'block';
-    // When exam mode selected, use all available questions by default
+    document.getElementById('examTypeCountsPanel').style.display = (mode === 'exam') ? 'block' : 'none';
+    // In exam mode, hide the single-type filter (per-type counts replace it)
+    document.getElementById('quizQuestionType').parentElement.style.display = '';
     if (mode === 'exam') {
         var questions = lsGet('quiz_questions', []);
         var catId = parseInt(document.getElementById('quizCategory').value) || 0;
         if (catId !== 0) questions = questions.filter(function(q) { return q.category_id === catId; });
-        var qtype = document.getElementById('quizQuestionType').value;
-        if (qtype) questions = questions.filter(function(q) { return q.question_type === qtype; });
-        document.getElementById('quizCount').value = Math.min(questions.length, 200);
+        var counts = {single:0,multi:0,judge:0,fill:0,short:0};
+        for (var i=0;i<questions.length;i++) { var t=questions[i].question_type||'single'; if(counts[t]!==undefined) counts[t]++; }
+        document.getElementById('examSingleCount').max = counts.single;
+        document.getElementById('examMultiCount').max  = counts.multi;
+        document.getElementById('examJudgeCount').max  = counts.judge;
+        document.getElementById('examFillCount').max   = counts.fill;
+        document.getElementById('examShortCount').max  = counts.short;
+        document.getElementById('examSingleCount').value = Math.min(10, counts.single);
+        document.getElementById('examMultiCount').value  = Math.min(5,  counts.multi);
+        document.getElementById('examJudgeCount').value  = Math.min(5,  counts.judge);
+        document.getElementById('examFillCount').value   = Math.min(3,  counts.fill);
+        document.getElementById('examShortCount').value  = Math.min(2,  counts.short);
+        updateExamTotal();
     }
 }
 
@@ -2215,8 +2251,8 @@ function startQuiz() {
         questions = questions.filter(function(q) { return q.category_id === categoryId; });
     }
 
-    // Filter by question type (works for ALL modes)
-    if (questionType) {
+    // Filter by question type (skip for exam mode — exam uses per-type counts)
+    if (mode !== 'exam' && questionType) {
         questions = questions.filter(function(q) { return q.question_type === questionType; });
     }
 
@@ -2233,14 +2269,32 @@ function startQuiz() {
         return;
     }
 
-    // Shuffle for random/exam mode
-    if (mode === 'random' || mode === 'exam') {
-        questions = shuffleArray(questions);
-    }
-
-    // Limit count
-    if (count > 0 && questions.length > count) {
-        questions = questions.slice(0, count);
+    // Exam mode: pick N of each type individually
+    if (mode === 'exam') {
+        var typeCounts = {
+            single: parseInt(document.getElementById('examSingleCount').value) || 0,
+            multi:  parseInt(document.getElementById('examMultiCount').value)  || 0,
+            judge:  parseInt(document.getElementById('examJudgeCount').value)  || 0,
+            fill:   parseInt(document.getElementById('examFillCount').value)   || 0,
+            short:  parseInt(document.getElementById('examShortCount').value)  || 0
+        };
+        var picked = [];
+        for (var tk in typeCounts) {
+            if (typeCounts[tk] <= 0) continue;
+            var pool = questions.filter(function(q) { return (q.question_type||'single') === tk; });
+            pool = shuffleArray(pool);
+            var take = Math.min(typeCounts[tk], pool.length);
+            for (var p=0;p<take;p++) picked.push(pool[p]);
+        }
+        questions = shuffleArray(picked);
+    } else {
+        // Normal mode: use single-type filter + count limit
+        if (mode === 'random') {
+            questions = shuffleArray(questions);
+        }
+        if (count > 0 && questions.length > count) {
+            questions = questions.slice(0, count);
+        }
     }
 
     quizState = {
