@@ -1591,7 +1591,10 @@ function viewQuestionDetail(qid) {
     document.getElementById('questionDetailBody').innerHTML = html;
     document.getElementById('detailEditBtn').onclick = function() { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); editQuestion(qid); };
     document.getElementById('detailDeleteBtn').onclick = function() { bootstrap.Modal.getInstance(document.getElementById('questionDetailModal')).hide(); deleteQuestion(qid); };
-    new bootstrap.Modal(document.getElementById('questionDetailModal')).show();
+    var detailModalEl = document.getElementById('questionDetailModal');
+    var prevDetail = bootstrap.Modal.getInstance(detailModalEl);
+    if (prevDetail) { prevDetail.dispose(); }
+    new bootstrap.Modal(detailModalEl).show();
 }
 
 function cleanupEmptyCategories() {
@@ -1696,7 +1699,10 @@ function openQuestionModal() {
     refreshCategories();
     populateCategorySelect('qeCategory', false);
     onQeTypeChange();
-    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+    var mEl = document.getElementById('questionEditModal');
+    var pm = bootstrap.Modal.getInstance(mEl);
+    if (pm) { pm.dispose(); }
+    new bootstrap.Modal(mEl).show();
 }
 
 function editQuestion(qid) {
@@ -1721,7 +1727,11 @@ function editQuestion(qid) {
     populateCategorySelect('qeCategory', false);
     document.getElementById('qeCategory').value = q.category_id;
     onQeTypeChange();
-    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+    var modalEl = document.getElementById('questionEditModal');
+    // Dispose previous modal instance to prevent backdrop pile-up
+    var prev = bootstrap.Modal.getInstance(modalEl);
+    if (prev) { prev.dispose(); }
+    new bootstrap.Modal(modalEl).show();
 }
 
 function onQeTypeChange() {
@@ -2496,76 +2506,32 @@ function resumeQuiz() {
     showToast('已恢复刷题进度');
 }
 
-var _quizEditQid = null;
-var _quizEditIdx = -1;
-
 function editQuizQuestion() {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
 
-    // Store which question we're editing so the post-save hook can find it
-    _quizEditQid = q.id;
-    _quizEditIdx = quizState.currentIndex;
+    // Reuse existing editQuestion function (it's battle-tested)
+    editQuestion(q.id);
 
-    // Find full question in localStorage
-    var questions = lsGet('quiz_questions', []);
-    var fullQ = null;
-    for (var i = 0; i < questions.length; i++) {
-        if (questions[i].id === q.id) { fullQ = questions[i]; break; }
-    }
-    if (!fullQ) { showToast('题目未找到', 'error'); return; }
-
-    // Populate modal fields (reuse existing editQuestion logic)
-    document.getElementById('qeId').value = fullQ.id;
-    document.getElementById('questionEditTitle').textContent = '编辑题目';
-    document.getElementById('qeContent').value = fullQ.content;
-    var opts = fullQ.options || [];
-    document.getElementById('qeOptions').value = Array.isArray(opts) ? opts.join('\n') : '';
-    document.getElementById('qeAnswer').value = fullQ.answer;
-    document.getElementById('qeAnalysis').value = fullQ.analysis || '';
-    document.getElementById('qeSource').value = fullQ.source || '';
-    document.getElementById('qeType').value = fullQ.question_type || 'single';
-    document.getElementById('qeDifficulty').value = fullQ.difficulty || 1;
-    refreshCategories();
-    populateCategorySelect('qeCategory', false);
-    document.getElementById('qeCategory').value = fullQ.category_id;
-    onQeTypeChange();
-
-    // Setup a one-time post-save hook on modal close
+    // After modal closes, update quiz question in-place and re-render
     var modalEl = document.getElementById('questionEditModal');
-    var afterSave = function() {
-        modalEl.removeEventListener('hidden.bs.modal', afterSave);
-        // After a short delay let saveQuestion finish writing to localStorage
-        setTimeout(function() {
-            if (_quizEditQid === null) return; // already handled
-
-            var updatedQuestions = lsGet('quiz_questions', []);
-            var updatedQ = null;
-            for (var i = 0; i < updatedQuestions.length; i++) {
-                if (updatedQuestions[i].id === _quizEditQid) { updatedQ = updatedQuestions[i]; break; }
+    var onClose = function() {
+        modalEl.removeEventListener('hidden.bs.modal', onClose);
+        var updated = lsGet('quiz_questions', []);
+        for (var i = 0; i < updated.length; i++) {
+            if (updated[i].id === q.id) {
+                q.content       = updated[i].content;
+                q.options       = updated[i].options || [];
+                q.answer        = updated[i].answer;
+                q.analysis      = updated[i].analysis || '';
+                q.question_type = updated[i].question_type || q.question_type;
+                q.difficulty    = updated[i].difficulty || q.difficulty;
+                break;
             }
-            if (!updatedQ) { _quizEditQid = null; return; }
-
-            var qi = quizState.questions[_quizEditIdx];
-            if (!qi) { _quizEditQid = null; return; }
-
-            qi.content       = updatedQ.content;
-            qi.options       = updatedQ.options || [];
-            qi.answer        = updatedQ.answer;
-            qi.analysis      = updatedQ.analysis || '';
-            qi.question_type = updatedQ.question_type || qi.question_type;
-            qi.difficulty    = updatedQ.difficulty || qi.difficulty;
-
-            _quizEditQid = null;
-            _quizEditIdx = -1;
-            renderCurrentQuestion();
-            showToast('题目已更新，继续答题');
-        }, 100);
+        }
+        renderCurrentQuestion();
     };
-    modalEl.addEventListener('hidden.bs.modal', afterSave, {once: true});
-
-    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modal.show();
+    modalEl.addEventListener('hidden.bs.modal', onClose, {once: true});
 }
 
 // ── Delete current question ──
