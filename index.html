@@ -2497,10 +2497,19 @@ function resumeQuiz() {
 }
 
 // ── Edit current question ──
+var _quizEditOverridden = false;
+var _quizOrigSave = null;
+function _restoreQuizSave() {
+    if (_quizEditOverridden) {
+        saveQuestion = _quizOrigSave;
+        _quizEditOverridden = false;
+        _quizOrigSave = null;
+        document.getElementById('questionEditModal').removeEventListener('hidden.bs.modal', _restoreQuizSave);
+    }
+}
 function editQuizQuestion() {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
-    // switch to full question object from localStorage
     var questions = lsGet('quiz_questions', []);
     var fullQ = null;
     for (var i = 0; i < questions.length; i++) {
@@ -2522,33 +2531,42 @@ function editQuizQuestion() {
     populateCategorySelect('qeCategory', false);
     document.getElementById('qeCategory').value = fullQ.category_id;
     onQeTypeChange();
-    // Hook save to also update quizState
-    window._quizEditMode = true;
-    window._quizEditQid = q.id;
-    var origSave = saveQuestion;
-    // Override save once
+
+    // Safely override saveQuestion, with cleanup on modal dismiss
+    _restoreQuizSave();
+    _quizOrigSave = saveQuestion;
+    _quizEditOverridden = true;
+    var editQid = q.id;
+    var editIdx = quizState.currentIndex;
+
     saveQuestion = function() {
-        saveQuestion = origSave; // restore
-        origSave();
+        _quizOrigSave();                        // do the actual save (DB + close modal)
+        _restoreQuizSave();                     // restore immediately
         // Refresh current question in quiz
         var updated = lsGet('quiz_questions', []);
         for (var i = 0; i < updated.length; i++) {
-            if (updated[i].id === window._quizEditQid) {
-                var qi = quizState.questions[quizState.currentIndex];
-                qi.content = updated[i].content;
-                qi.options = updated[i].options || [];
-                qi.answer = updated[i].answer;
-                qi.analysis = updated[i].analysis || '';
-                qi.question_type = updated[i].question_type || qi.question_type;
-                qi.difficulty = updated[i].difficulty || qi.difficulty;
+            if (updated[i].id === editQid) {
+                var qi = quizState.questions[editIdx];
+                if (qi) {
+                    qi.content       = updated[i].content;
+                    qi.options       = updated[i].options || [];
+                    qi.answer        = updated[i].answer;
+                    qi.analysis      = updated[i].analysis || '';
+                    qi.question_type = updated[i].question_type || qi.question_type;
+                    qi.difficulty    = updated[i].difficulty || qi.difficulty;
+                }
                 break;
             }
         }
-        window._quizEditMode = false;
         renderCurrentQuestion();
         showToast('题目已更新，继续答题');
     };
-    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+    // If user cancels the modal without saving, still restore
+    document.getElementById('questionEditModal').addEventListener('hidden.bs.modal', _restoreQuizSave, {once: true});
+
+    var modalEl = document.getElementById('questionEditModal');
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
 }
 
 // ── Delete current question ──
