@@ -748,11 +748,11 @@ body::after {
                 <small class="text-muted" id="examTotalInfo">总计 0 题</small>
             </div>
             <div class="row g-2">
-                <div class="col"><label class="form-label small fw-semibold">单选</label><input type="number" class="form-control form-control-sm exam-type-count" id="examSingleCount" value="10" min="0" max="100" onchange="updateExamTotal()"></div>
-                <div class="col"><label class="form-label small fw-semibold">多选</label><input type="number" class="form-control form-control-sm exam-type-count" id="examMultiCount"  value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
-                <div class="col"><label class="form-label small fw-semibold">判断</label><input type="number" class="form-control form-control-sm exam-type-count" id="examJudgeCount" value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
-                <div class="col"><label class="form-label small fw-semibold">填空</label><input type="number" class="form-control form-control-sm exam-type-count" id="examFillCount"  value="3"  min="0" max="100" onchange="updateExamTotal()"></div>
-                <div class="col"><label class="form-label small fw-semibold">简答</label><input type="number" class="form-control form-control-sm exam-type-count" id="examShortCount" value="2"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">单选 <span class="text-muted exam-avail" id="examAvailSingle">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examSingleCount" value="10" min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">多选 <span class="text-muted exam-avail" id="examAvailMulti">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examMultiCount"  value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">判断 <span class="text-muted exam-avail" id="examAvailJudge">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examJudgeCount" value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">填空 <span class="text-muted exam-avail" id="examAvailFill">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examFillCount"  value="3"  min="0" max="100" onchange="updateExamTotal()"></div>
+                <div class="col"><label class="form-label small fw-semibold">简答 <span class="text-muted exam-avail" id="examAvailShort">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examShortCount" value="2"  min="0" max="100" onchange="updateExamTotal()"></div>
             </div>
         </div>
 
@@ -2144,6 +2144,11 @@ function onQuizModeChange() {
         document.getElementById('examJudgeCount').value  = Math.min(5,  counts.judge);
         document.getElementById('examFillCount').value   = Math.min(3,  counts.fill);
         document.getElementById('examShortCount').value  = Math.min(2,  counts.short);
+        document.getElementById('examAvailSingle').textContent = '(共' + counts.single + '题)';
+        document.getElementById('examAvailMulti').textContent  = '(共' + counts.multi + '题)';
+        document.getElementById('examAvailJudge').textContent  = '(共' + counts.judge + '题)';
+        document.getElementById('examAvailFill').textContent   = '(共' + counts.fill + '题)';
+        document.getElementById('examAvailShort').textContent  = '(共' + counts.short + '题)';
         updateExamTotal();
     }
 }
