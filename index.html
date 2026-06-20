@@ -702,6 +702,13 @@ body::after {
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-quiz">
     <div id="quizSetup">
+        <!-- Resume banner -->
+        <div class="alert alert-info py-2 mb-3" id="quizResumeBanner" style="display:none;background:linear-gradient(135deg,#FEF3C7,#FFF5E6);border-color:rgba(217,119,6,.25);color:var(--amber-dark);border-radius:14px">
+            <div class="d-flex justify-content-between align-items-center">
+                <span>&#128260; 你有未完成的刷题记录：<span id="quizResumeInfo"></span></span>
+                <button class="btn btn-sm btn-primary" onclick="resumeQuiz()" style="font-size:0.8rem">继续答题</button>
+            </div>
+        </div>
         <div class="quiz-card fade-in">
             <h5 class="section-title">刷题设置</h5>
             <div class="row g-3">
@@ -733,7 +740,15 @@ body::after {
                 <span class="fw-bold" id="quizScoreText">正确: 0 | 错误: 0</span>
                 <button class="btn btn-sm btn-outline-danger" onclick="endQuiz()">结束刷题</button>
             </div>
-            <div class="progress mb-2" style="height:8px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <div class="progress mb-1" style="height:6px;"><div class="progress-bar" id="quizProgressBar" style="width:0%"></div></div>
+            <!-- Quick actions bar -->
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="saveQuizAndExit()" title="保存当前进度，下次继续" style="font-size:0.75rem">保存退出</button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="editQuizQuestion()" title="修改当前题目" style="font-size:0.75rem">修改此题</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteQuizQuestion()" title="删除当前题目" style="font-size:0.75rem">删除此题</button>
+                </div>
+            </div>
             <!-- Answer Sheet -->
             <div class="answer-sheet mb-3" id="quizAnswerSheet"></div>
             <div id="quizQuestionArea"></div>
@@ -2038,6 +2053,7 @@ var quizState = {
 function loadQuizSetup() {
     refreshCategories();
     populateCategorySelect('quizCategory', true);
+    showResumeBanner();
 }
 
 function checkAnswerLocal(question, userAnswer) {
@@ -2389,6 +2405,8 @@ function finishQuiz() {
         created_at: new Date().toISOString()
     });
     lsSet('quiz_records', records);
+    lsSet('quiz_saved_session', null); // Clear saved session on finish
+    quizState.active = false;
 
     document.getElementById('quizSummaryTotal').textContent = total;
     document.getElementById('quizSummaryCorrect').textContent = correct;
@@ -2411,6 +2429,162 @@ function resetQuiz() {
     document.getElementById('quizSummary').style.display = 'none';
     document.getElementById('quizQuestionArea').innerHTML = '';
     document.getElementById('quizProgressBar').style.width = '0%';
+    lsSet('quiz_saved_session', null);
+    document.getElementById('quizResumeBanner').style.display = 'none';
+}
+
+// ── Save & Exit ──
+function saveQuizAndExit() {
+    if (!quizState.active) return;
+    var saveData = {
+        questions: quizState.questions,
+        currentIndex: quizState.currentIndex,
+        correctCount: quizState.correctCount,
+        wrongCount: quizState.wrongCount,
+        answers: quizState.answers,
+        results: quizState.results,
+        submitted: quizState.submitted,
+        mode: quizState.mode,
+        categoryId: quizState.categoryId,
+        savedAt: new Date().toISOString()
+    };
+    lsSet('quiz_saved_session', saveData);
+    showToast('进度已保存，下次打开刷题页面可继续');
+    quizState.active = false;
+    document.getElementById('quizActive').style.display = 'none';
+    document.getElementById('quizSetup').style.display = 'block';
+    showResumeBanner();
+    loadQuizSetup();
+}
+
+function showResumeBanner() {
+    var saved = lsGet('quiz_saved_session', null);
+    var banner = document.getElementById('quizResumeBanner');
+    var info = document.getElementById('quizResumeInfo');
+    if (saved && saved.questions && saved.questions.length > 0) {
+        var done = Object.keys(saved.submitted).length;
+        var total = saved.questions.length;
+        info.textContent = done + '/' + total + ' 题已答，正确 ' + saved.correctCount + ' 题，保存于 ' + (saved.savedAt || '').substring(11, 19);
+        banner.style.display = 'block';
+    } else {
+        banner.style.display = 'none';
+    }
+}
+
+function resumeQuiz() {
+    var saved = lsGet('quiz_saved_session', null);
+    if (!saved || !saved.questions || saved.questions.length === 0) {
+        showToast('没有可恢复的进度', 'warning'); return;
+    }
+    quizState = {
+        questions: saved.questions,
+        currentIndex: saved.currentIndex,
+        correctCount: saved.correctCount,
+        wrongCount: saved.wrongCount,
+        answers: saved.answers || {},
+        results: saved.results || {},
+        submitted: saved.submitted || {},
+        mode: saved.mode || 'sequential',
+        categoryId: saved.categoryId || 0,
+        active: true
+    };
+    document.getElementById('quizSetup').style.display = 'none';
+    document.getElementById('quizActive').style.display = 'block';
+    document.getElementById('quizResumeBanner').style.display = 'none';
+    document.getElementById('quizSummary').style.display = 'none';
+    renderCurrentQuestion();
+    showToast('已恢复刷题进度');
+}
+
+// ── Edit current question ──
+function editQuizQuestion() {
+    var q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+    // switch to full question object from localStorage
+    var questions = lsGet('quiz_questions', []);
+    var fullQ = null;
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === q.id) { fullQ = questions[i]; break; }
+    }
+    if (!fullQ) { showToast('题目未找到', 'error'); return; }
+
+    document.getElementById('qeId').value = fullQ.id;
+    document.getElementById('questionEditTitle').textContent = '编辑题目';
+    document.getElementById('qeContent').value = fullQ.content;
+    var opts = fullQ.options || [];
+    document.getElementById('qeOptions').value = Array.isArray(opts) ? opts.join('\n') : '';
+    document.getElementById('qeAnswer').value = fullQ.answer;
+    document.getElementById('qeAnalysis').value = fullQ.analysis || '';
+    document.getElementById('qeSource').value = fullQ.source || '';
+    document.getElementById('qeType').value = fullQ.question_type || 'single';
+    document.getElementById('qeDifficulty').value = fullQ.difficulty || 1;
+    refreshCategories();
+    populateCategorySelect('qeCategory', false);
+    document.getElementById('qeCategory').value = fullQ.category_id;
+    onQeTypeChange();
+    // Hook save to also update quizState
+    window._quizEditMode = true;
+    window._quizEditQid = q.id;
+    var origSave = saveQuestion;
+    // Override save once
+    saveQuestion = function() {
+        saveQuestion = origSave; // restore
+        origSave();
+        // Refresh current question in quiz
+        var updated = lsGet('quiz_questions', []);
+        for (var i = 0; i < updated.length; i++) {
+            if (updated[i].id === window._quizEditQid) {
+                var qi = quizState.questions[quizState.currentIndex];
+                qi.content = updated[i].content;
+                qi.options = updated[i].options || [];
+                qi.answer = updated[i].answer;
+                qi.analysis = updated[i].analysis || '';
+                qi.question_type = updated[i].question_type || qi.question_type;
+                qi.difficulty = updated[i].difficulty || qi.difficulty;
+                break;
+            }
+        }
+        window._quizEditMode = false;
+        renderCurrentQuestion();
+        showToast('题目已更新，继续答题');
+    };
+    new bootstrap.Modal(document.getElementById('questionEditModal')).show();
+}
+
+// ── Delete current question ──
+function deleteQuizQuestion() {
+    var q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+    if (!confirm('确定要删除此题吗？\n\n' + (q.content || '').substring(0, 80) + '\n\n此操作不可撤销，删除后将跳转到下一题。')) return;
+
+    // Delete from localStorage
+    var questions = lsGet('quiz_questions', []);
+    questions = questions.filter(function(qi) { return qi.id !== q.id; });
+    lsSet('quiz_questions', questions);
+
+    // Remove from quizState
+    quizState.questions.splice(quizState.currentIndex, 1);
+    delete quizState.answers[q.id];
+    delete quizState.results[q.id];
+    delete quizState.submitted[q.id];
+
+    // Update saved session if any
+    var saved = lsGet('quiz_saved_session', null);
+    if (saved && saved.questions) {
+        saved.questions = saved.questions.filter(function(qi) { return qi.id !== q.id; });
+        lsSet('quiz_saved_session', saved);
+    }
+
+    if (quizState.questions.length === 0) {
+        showToast('已无题目，刷题结束');
+        finishQuiz();
+        return;
+    }
+    if (quizState.currentIndex >= quizState.questions.length) {
+        quizState.currentIndex = quizState.questions.length - 1;
+    }
+    showToast('题目已删除');
+    renderCurrentQuestion();
 }
 
 // ============================================================
