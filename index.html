@@ -751,6 +751,27 @@ body::after {
             </div>
             <!-- Answer Sheet -->
             <div class="answer-sheet mb-3" id="quizAnswerSheet"></div>
+            <!-- Inline Edit Form (replaces modal, zero backdrop issues) -->
+            <div class="card p-3 mb-3" id="quizEditForm" style="display:none;border:2px solid var(--amber);border-radius:14px;background:#fff">
+                <h6 class="fw-bold mb-2" style="color:var(--amber-dark)">编辑题目</h6>
+                <input type="hidden" id="qeId_quiz">
+                <div class="row g-2 mb-2">
+                    <div class="col-6"><label class="form-label small fw-semibold">分类</label><select class="form-select form-select-sm" id="qeCategory_quiz"></select></div>
+                    <div class="col-3"><label class="form-label small fw-semibold">题型</label><select class="form-select form-select-sm" id="qeType_quiz" onchange="onQeTypeChange_quiz()"><option value="single">单选</option><option value="multi">多选</option><option value="judge">判断</option><option value="fill">填空</option><option value="short">简答</option></select></div>
+                    <div class="col-3"><label class="form-label small fw-semibold">难度</label><select class="form-select form-select-sm" id="qeDifficulty_quiz"><option value="1">1星</option><option value="2">2星</option><option value="3" selected>3星</option><option value="4">4星</option><option value="5">5星</option></select></div>
+                </div>
+                <div class="mb-2"><label class="form-label small fw-semibold">题目内容</label><textarea class="form-control form-control-sm" id="qeContent_quiz" rows="3"></textarea></div>
+                <div class="mb-2" id="qeOptionsGroup_quiz"><label class="form-label small fw-semibold">选项（一行一个）</label><textarea class="form-control form-control-sm" id="qeOptions_quiz" rows="4" placeholder="A. 选项A&#10;B. 选项B&#10;C. 选项C&#10;D. 选项D"></textarea></div>
+                <div class="row g-2 mb-2">
+                    <div class="col-8"><label class="form-label small fw-semibold">正确答案</label><input class="form-control form-control-sm" id="qeAnswer_quiz"></div>
+                    <div class="col-4"><label class="form-label small fw-semibold">来源</label><input class="form-control form-control-sm" id="qeSource_quiz" placeholder="manual"></div>
+                </div>
+                <div class="mb-2"><label class="form-label small fw-semibold">解析</label><textarea class="form-control form-control-sm" id="qeAnalysis_quiz" rows="2"></textarea></div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-primary" onclick="saveQuizEdit()">保存修改</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="cancelQuizEdit()">取消</button>
+                </div>
+            </div>
             <div id="quizQuestionArea"></div>
         </div>
     </div>
@@ -2514,55 +2535,111 @@ function safeModalShow(modalId) {
     return m;
 }
 
+// ── Inline question editor (no Bootstrap modal, no backdrop) ──
 function editQuizQuestion() {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
 
-    // Populate modal fields
-    var questions = lsGet('quiz_questions', []);
-    var fullQ = null;
-    for (var i = 0; i < questions.length; i++) {
-        if (questions[i].id === q.id) { fullQ = questions[i]; break; }
-    }
-    if (!fullQ) { showToast('题目未找到', 'error'); return; }
-
-    document.getElementById('qeId').value = fullQ.id;
-    document.getElementById('questionEditTitle').textContent = '编辑题目';
-    document.getElementById('qeContent').value = fullQ.content;
-    var opts = fullQ.options || [];
-    document.getElementById('qeOptions').value = Array.isArray(opts) ? opts.join('\n') : '';
-    document.getElementById('qeAnswer').value = fullQ.answer;
-    document.getElementById('qeAnalysis').value = fullQ.analysis || '';
-    document.getElementById('qeSource').value = fullQ.source || '';
-    document.getElementById('qeType').value = fullQ.question_type || 'single';
-    document.getElementById('qeDifficulty').value = fullQ.difficulty || 1;
+    // Populate inline form
+    document.getElementById('qeId_quiz').value = q.id;
+    document.getElementById('qeContent_quiz').value = q.content;
+    var opts = q.options || [];
+    document.getElementById('qeOptions_quiz').value = Array.isArray(opts) ? opts.join('\n') : '';
+    document.getElementById('qeAnswer_quiz').value = q.answer;
+    document.getElementById('qeAnalysis_quiz').value = q.analysis || '';
+    document.getElementById('qeSource_quiz').value = q.source || '';
+    document.getElementById('qeType_quiz').value = q.question_type || 'single';
+    document.getElementById('qeDifficulty_quiz').value = q.difficulty || 1;
     refreshCategories();
-    populateCategorySelect('qeCategory', false);
-    document.getElementById('qeCategory').value = fullQ.category_id;
-    onQeTypeChange();
+    populateCategorySelect_quiz();
+    document.getElementById('qeCategory_quiz').value = q.category_id;
+    onQeTypeChange_quiz();
 
-    // Show modal safely
-    safeModalShow('questionEditModal');
+    // Show inline form, hide question area
+    document.getElementById('quizEditForm').style.display = 'block';
+    document.getElementById('quizQuestionArea').style.display = 'none';
+}
 
-    // After modal closes, update quiz question in-place and re-render
-    var modalEl = document.getElementById('questionEditModal');
-    var onClose = function() {
-        modalEl.removeEventListener('hidden.bs.modal', onClose);
-        var updated = lsGet('quiz_questions', []);
-        for (var i = 0; i < updated.length; i++) {
-            if (updated[i].id === q.id) {
-                q.content       = updated[i].content;
-                q.options       = updated[i].options || [];
-                q.answer        = updated[i].answer;
-                q.analysis      = updated[i].analysis || '';
-                q.question_type = updated[i].question_type || q.question_type;
-                q.difficulty    = updated[i].difficulty || q.difficulty;
-                break;
-            }
+function populateCategorySelect_quiz() {
+    var sel = document.getElementById('qeCategory_quiz');
+    if (!sel) return;
+    var html = '';
+    for (var i = 0; i < categoriesCache.length; i++) {
+        html += '<option value="' + categoriesCache[i].id + '">' + categoriesCache[i].name + '</option>';
+    }
+    sel.innerHTML = html;
+}
+
+function onQeTypeChange_quiz() {
+    var type = document.getElementById('qeType_quiz').value;
+    var g = document.getElementById('qeOptionsGroup_quiz');
+    if (type === 'fill' || type === 'short') {
+        g.style.display = 'none';
+    } else {
+        g.style.display = 'block';
+    }
+}
+
+function saveQuizEdit() {
+    var qid = parseInt(document.getElementById('qeId_quiz').value);
+    var categoryId = parseInt(document.getElementById('qeCategory_quiz').value) || 0;
+    var questionType = document.getElementById('qeType_quiz').value;
+    var content = document.getElementById('qeContent_quiz').value.trim();
+    var answer = document.getElementById('qeAnswer_quiz').value.trim();
+    var analysis = document.getElementById('qeAnalysis_quiz').value.trim();
+    var difficulty = parseInt(document.getElementById('qeDifficulty_quiz').value) || 1;
+    var source = document.getElementById('qeSource_quiz').value.trim() || 'manual';
+
+    if (!content) { showToast('题目内容不能为空', 'error'); return; }
+    if (!answer) { showToast('正确答案不能为空', 'error'); return; }
+    if (categoryId === 0) { showToast('请选择分类', 'error'); return; }
+
+    var options = [];
+    if (questionType !== 'fill' && questionType !== 'short') {
+        var optsText = document.getElementById('qeOptions_quiz').value.trim();
+        if (optsText) {
+            options = optsText.split('\n').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
         }
-        renderCurrentQuestion();
-    };
-    modalEl.addEventListener('hidden.bs.modal', onClose, {once: true});
+    }
+
+    // Save to localStorage
+    var questions = lsGet('quiz_questions', []);
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === qid) {
+            questions[i].category_id = categoryId;
+            questions[i].question_type = questionType;
+            questions[i].content = content;
+            questions[i].options = options;
+            questions[i].answer = answer;
+            questions[i].analysis = analysis;
+            questions[i].difficulty = difficulty;
+            questions[i].source = source;
+            break;
+        }
+    }
+    lsSet('quiz_questions', questions);
+
+    // Update current quizState question
+    var qi = quizState.questions[quizState.currentIndex];
+    if (qi && qi.id === qid) {
+        qi.content = content;
+        qi.options = options;
+        qi.answer = answer;
+        qi.analysis = analysis;
+        qi.question_type = questionType;
+        qi.difficulty = difficulty;
+        qi.source = source;
+        qi.category_id = categoryId;
+    }
+
+    cancelQuizEdit();
+    renderCurrentQuestion();
+    showToast('题目已更新');
+}
+
+function cancelQuizEdit() {
+    document.getElementById('quizEditForm').style.display = 'none';
+    document.getElementById('quizQuestionArea').style.display = 'block';
 }
 
 // ── Delete current question ──
