@@ -781,6 +781,7 @@ body::after {
                     <button class="btn btn-sm btn-outline-secondary" onclick="saveQuizAndExit()" title="保存当前进度，下次继续" style="font-size:0.75rem">保存退出</button>
                     <button class="btn btn-sm btn-outline-warning" onclick="editQuizQuestion()" title="修改当前题目" style="font-size:0.75rem">修改此题</button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteQuizQuestion()" title="删除当前题目" style="font-size:0.75rem">删除此题</button>
+                    <button class="btn btn-sm btn-outline-info" id="quizAiCheckBtn" onclick="doQuizAiCheck()" title="让AI做这道题并对比答案" style="font-size:0.75rem">AI 检校</button>
                 </div>
             </div>
             <!-- Answer Sheet -->
@@ -807,6 +808,8 @@ body::after {
                 </div>
             </div>
             <div id="quizQuestionArea"></div>
+            <!-- AI 检校结果区 -->
+            <div id="quizAiResult" style="display:none;margin-top:0.75rem;padding:0.75rem 1rem;border-radius:12px;border:2px solid #3B82F6;background:#EFF6FF;font-size:0.88rem;line-height:1.7"></div>
         </div>
     </div>
 
@@ -2780,6 +2783,98 @@ function saveQuizEdit() {
     renderCurrentQuestion();
     showToast('题目已更新');
 }
+
+async function doQuizAiCheck() {
+    var config = getAiConfig();
+    if (!config.base_url) { showToast('请先在AI设置中配置API信息', 'warning'); return; }
+
+    var q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+
+    var resultDiv = document.getElementById('quizAiResult');
+    var btn = document.getElementById('quizAiCheckBtn');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<div class="text-center text-muted py-2"><div class="spinner-border spinner-border-sm" style="color:#3B82F6"></div> AI 正在分析题目...</div>';
+    btn.disabled = true;
+
+    // Build prompt with full question context
+    var typeCN = {single:'单选题', multi:'多选题', judge:'判断题', fill:'填空题', short:'简答题'};
+    var userMsg = '请详细分析并解答以下' + (typeCN[q.question_type]||'题目') + '：\n\n题目：' + q.content;
+
+    var opts = q.options || [];
+    if (opts.length > 0) {
+        userMsg += '\n选项：\n';
+        for (var i = 0; i < opts.length; i++) {
+            userMsg += String.fromCharCode(65 + i) + '. ' + opts[i] + '\n';
+        }
+    }
+
+    var systemPrompt = '你是一位考试辅导专家。请仔细分析下面的题目，给出你的答案和详细解析。\n\n请按以下格式输出：\n【AI答案】你的正确答案\n【解析】详细的解题分析\n【评价】如果题目本身有错误或不严谨之处，请指出；如果题目正确，简要说明此题考察的知识点即可。\n\n请用中文回复。';
+
+    try {
+        var result = await aiChat(systemPrompt, userMsg);
+        // Parse AI result: try to extract answer and analysis
+        var aiAnswer = '';
+        var aiAnalysis = result || '';
+        var m = result.match(/【AI答案】\s*(.+?)(?:\n|【|$)/);
+        if (m) aiAnswer = m[1].trim();
+        var m2 = result.match(/【解析】\s*([\s\S]*?)(?=【评价】|$)/);
+        if (m2) aiAnalysis = m2[1].trim();
+
+        // Compare with stored answer
+        var storedAnswer = (q.answer || '').trim();
+        var match = answersMatch(aiAnswer, storedAnswer) || aiAnswer.toUpperCase() === storedAnswer.toUpperCase();
+
+        var html = '<div style="font-weight:700;color:#1D4ED8;margin-bottom:0.4rem">AI 分析结果</div>';
+        html += '<div style="margin-bottom:0.5rem"><span style="color:#64748B">AI答案：</span><span style="font-weight:700;font-size:1.05rem;color:' + (match ? '#059669' : '#DC2626') + '">' + (aiAnswer || '未识别') + '</span>';
+        if (!match && storedAnswer) {
+            html += ' &nbsp; <span style="color:#64748B">原答案：</span><span style="font-weight:600;color:#D97706">' + storedAnswer + '</span>';
+        }
+        html += '</div>';
+        if (aiAnalysis) {
+            html += '<div style="background:#fff;padding:0.6rem 0.8rem;border-radius:8px;margin-bottom:0.5rem;white-space:pre-wrap">' + aiAnalysis + '</div>';
+        }
+        // Save button if AI answer disagrees
+        if (!match && aiAnswer) {
+            html += '<button class="btn btn-sm btn-warning" onclick="saveAiAnswer(\'' + escapeJs(aiAnswer) + '\',\'' + escapeJs(aiAnalysis) + '\')">采纳AI答案并保存</button> ';
+        }
+        html += '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button>';
+        resultDiv.innerHTML = html;
+
+        // Store for re-render after save
+        window._quizAiCheckResult = { aiAnswer: aiAnswer, aiAnalysis: aiAnalysis, match: match };
+    } catch(e) {
+        resultDiv.innerHTML = '<div class="text-danger small">AI检校失败: ' + e.message + ' <button class="btn btn-sm btn-outline-secondary ms-2" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button></div>';
+    }
+    btn.disabled = false;
+}
+
+function saveAiAnswer(aiAnswer, aiAnalysis) {
+    var q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+
+    // Update localStorage
+    var questions = lsGet('quiz_questions', []);
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === q.id) {
+            questions[i].answer = aiAnswer;
+            questions[i].analysis = aiAnalysis || questions[i].analysis;
+            break;
+        }
+    }
+    lsSet('quiz_questions', questions);
+
+    // Update quizState
+    q.answer = aiAnswer;
+    if (aiAnalysis) q.analysis = aiAnalysis;
+
+    // Refresh current question display
+    renderCurrentQuestion();
+    document.getElementById('quizAiResult').style.display = 'none';
+    showToast('已采纳AI答案并保存到题库');
+}
+
+function escapeJs(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n'); }
 
 function cancelQuizEdit() {
     document.getElementById('quizEditForm').style.display = 'none';
