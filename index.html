@@ -2821,9 +2821,30 @@ async function doQuizAiCheck() {
         var m2 = result.match(/【解析】\s*([\s\S]*?)(?=【评价】|$)/);
         if (m2) aiAnalysis = m2[1].trim();
 
-        // Compare with stored answer
+        // Compare with stored answer (case-insensitive, trimmed)
         var storedAnswer = (q.answer || '').trim();
-        var match = answersMatch(aiAnswer, storedAnswer) || aiAnswer.toUpperCase() === storedAnswer.toUpperCase();
+        var match = false;
+        if (aiAnswer && storedAnswer) {
+            var a1 = aiAnswer.trim().toUpperCase();
+            var a2 = storedAnswer.toUpperCase();
+            // Also check single-letter vs full-text for judge type
+            if (q.question_type === 'judge') {
+                // Map common Chinese judge answers
+                var normMap = {'正确':'对','错误':'错','是':'对','否':'错','T':'对','F':'错','TRUE':'对','FALSE':'错','YES':'对','NO':'错'};
+                var na1 = (normMap[a1] || a1).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
+                var na2 = (normMap[a2] || a2).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
+                match = (na1 === na2);
+            } else {
+                // Normalize: strip whitespace, uppercase, remove commas between multi-char answers
+                a1 = a1.replace(/[,，\s]/g,'');
+                a2 = a2.replace(/[,，\s]/g,'');
+                match = (a1 === a2);
+            }
+        }
+
+        // Store pending AI answer+analysis in window for button handler
+        window._aiPendingAnswer = aiAnswer;
+        window._aiPendingAnalysis = aiAnalysis;
 
         var html = '<div style="font-weight:700;color:#1D4ED8;margin-bottom:0.4rem">AI 分析结果</div>';
         html += '<div style="margin-bottom:0.5rem"><span style="color:#64748B">AI答案：</span><span style="font-weight:700;font-size:1.05rem;color:' + (match ? '#059669' : '#DC2626') + '">' + (aiAnswer || '未识别') + '</span>';
@@ -2834,22 +2855,25 @@ async function doQuizAiCheck() {
         if (aiAnalysis) {
             html += '<div style="background:#fff;padding:0.6rem 0.8rem;border-radius:8px;margin-bottom:0.5rem;white-space:pre-wrap">' + aiAnalysis + '</div>';
         }
-        // Save button if AI answer disagrees
+        // Save button if AI answer disagrees — use onclick with data from window, no escaping needed
         if (!match && aiAnswer) {
-            html += '<button class="btn btn-sm btn-warning" onclick="saveAiAnswer(\'' + escapeJs(aiAnswer) + '\',\'' + escapeJs(aiAnalysis) + '\')">采纳AI答案并保存</button> ';
+            html += '<button class="btn btn-sm btn-warning me-1" onclick="saveAiAnswer()">采纳AI答案并保存</button>';
         }
         html += '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button>';
         resultDiv.innerHTML = html;
-
-        // Store for re-render after save
-        window._quizAiCheckResult = { aiAnswer: aiAnswer, aiAnalysis: aiAnalysis, match: match };
     } catch(e) {
-        resultDiv.innerHTML = '<div class="text-danger small">AI检校失败: ' + e.message + ' <button class="btn btn-sm btn-outline-secondary ms-2" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button></div>';
+        resultDiv.innerHTML = '<div class="text-danger small">AI检校失败: ' + (e.message||e) + ' <button class="btn btn-sm btn-outline-secondary ms-2" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button></div>';
     }
     btn.disabled = false;
 }
 
 function saveAiAnswer(aiAnswer, aiAnalysis) {
+    // Use window-stored values if called without args (from onclick button)
+    if (aiAnswer === undefined) {
+        aiAnswer = window._aiPendingAnswer;
+        aiAnalysis = window._aiPendingAnalysis;
+    }
+    if (!aiAnswer) return;
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
 
