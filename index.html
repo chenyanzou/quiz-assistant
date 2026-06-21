@@ -2245,7 +2245,7 @@ function startQuiz() {
     var categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
     var questionType = document.getElementById('quizQuestionType').value;
     var count = parseInt(document.getElementById('quizCount').value) || 10;
-    var timeLimit = parseInt(document.getElementById('quizTimeLimit').value) || 0;
+    var timeLimit = (mode === 'exam') ? (parseInt(document.getElementById('quizTimeLimit').value) || 0) : 0;
 
     document.getElementById('quizSetup').style.display = 'none';
     document.getElementById('quizActive').style.display = 'block';
