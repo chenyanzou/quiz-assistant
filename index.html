@@ -1388,36 +1388,50 @@ function loadDashboard() {
         return;
     }
 
-    // Compute per-category stats
+    // Compute per-category stats (robust — handles re-imported categories)
     var catStats = {};
     for (var i = 0; i < categories.length; i++) {
         catStats[categories[i].id] = { count: 0, correct: 0, attempts: 0, accuracy: 0, tried: 0 };
     }
+    // Count questions per category (auto-create entries for orphaned data)
     for (var i = 0; i < questions.length; i++) {
         var cid = questions[i].category_id;
-        if (catStats[cid]) catStats[cid].count++;
+        if (!catStats[cid]) catStats[cid] = { count: 0, correct: 0, attempts: 0, accuracy: 0, tried: 0 };
+        catStats[cid].count++;
     }
-    // Track which questions have been attempted (unique) from quiz_tried
+    // Track attempted questions from quiz_tried
     var triedArr = lsGet('quiz_tried', []);
     var triedQids = {};
     for (var i = 0; i < triedArr.length; i++) { triedQids[triedArr[i]] = true; }
-    // Also include wrong book questions
+    // Include wrong questions
     var wrongs = lsGet('quiz_wrong', []);
     for (var i = 0; i < wrongs.length; i++) { triedQids[wrongs[i].question_id] = true; }
-    // Count tried per category
+    // Count tried + accuracy from tried/wrong per category
     for (var i = 0; i < questions.length; i++) {
         var q = questions[i];
-        if (triedQids[q.id] && catStats[q.category_id]) {
-            catStats[q.category_id].tried++;
+        var qCatId = q.category_id;
+        if (!catStats[qCatId]) catStats[qCatId] = { count: 0, correct: 0, attempts: 0, accuracy: 0, tried: 0 };
+        if (triedQids[q.id]) {
+            catStats[qCatId].tried++;
+            catStats[qCatId].attempts++;
+            // Check if this question is in wrong book — if NOT wrong, treat as correct
+            var isWrong = false;
+            for (var w = 0; w < wrongs.length; w++) {
+                if (wrongs[w].question_id === q.id) { isWrong = true; break; }
+            }
+            if (!isWrong) catStats[qCatId].correct++;
         }
     }
+    // Also merge data from quiz_records (cross-reference by category_id)
     for (var i = 0; i < records.length; i++) {
-        var cid2 = records[i].category_id;
-        if (catStats[cid2]) {
-            catStats[cid2].correct += records[i].correct || 0;
-            catStats[cid2].attempts += records[i].total || 0;
+        var r = records[i];
+        if (r.category_id && r.total > 1) { // only use summary records (total>1), avoid per-question duplicates
+            if (!catStats[r.category_id]) catStats[r.category_id] = { count: 0, correct: 0, attempts: 0, accuracy: 0, tried: 0 };
+            catStats[r.category_id].correct += r.correct || 0;
+            catStats[r.category_id].attempts += r.total || 0;
         }
     }
+    // Calculate final accuracy
     for (var k in catStats) {
         if (catStats[k].attempts > 0) {
             catStats[k].accuracy = Math.round(catStats[k].correct / catStats[k].attempts * 100);
