@@ -2671,8 +2671,10 @@ function showResumeBanner() {
             '<div><span class="fw-bold" style="color:var(--amber-dark)">' + s.catName + '</span>' +
             '<span class="text-muted small ms-2">' + (modeCN[s.mode]||s.mode) + ' · ' + s.done + '/' + s.total + '题 · ' + s.savedAt + '</span>' +
             '<div class="progress mt-1" style="height:4px;width:200px"><div class="progress-bar" style="width:' + pct + '%"></div></div></div>' +
+            '<div class="d-flex gap-1 flex-shrink-0">' +
             '<button class="btn btn-sm btn-primary" onclick="resumeSavedQuiz(\'' + s.key + '\',' + s.catId + ')" style="font-size:0.75rem;white-space:nowrap">继续</button>' +
-            '</div>';
+            '<button class="btn btn-sm btn-outline-danger" onclick="discardSavedQuiz(\'' + s.key + '\')" style="font-size:0.75rem;padding:0.25rem 0.45rem" title="删除此保存记录">✕</button>' +
+            '</div></div>';
     }
     list.innerHTML = html;
     panel.style.display = 'block';
@@ -2692,6 +2694,12 @@ function resumeSavedQuiz(key, catId) {
     document.getElementById('quizSummary').style.display = 'none';
     renderCurrentQuestion();
     showToast('已恢复刷题进度');
+}
+
+function discardSavedQuiz(key) {
+    lsSet(key, null);
+    showResumeBanner();
+    showToast('已删除保存记录');
 }
 
 // ── Safe modal opener — always cleans backdrop first ──
