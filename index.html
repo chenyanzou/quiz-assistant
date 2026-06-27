@@ -2154,6 +2154,7 @@ function onQuizModeChange() {
         document.getElementById('examAvailShort').textContent  = '(共' + counts.short + '题)';
         updateExamTotal();
     }
+    showResumeBanner();
 }
 
 function startQuizTimer() {
@@ -2571,7 +2572,7 @@ function finishQuiz() {
         created_at: new Date().toISOString()
     });
     lsSet('quiz_records', records);
-    lsSet('quiz_saved_session', null); // Clear saved session on finish
+    lsSet('quiz_saved_' + (quizState.categoryId || 0), null); // Clear saved session on finish
     quizState.active = false;
 
     document.getElementById('quizSummaryTotal').textContent = total;
@@ -2596,7 +2597,7 @@ function resetQuiz() {
     document.getElementById('quizSummary').style.display = 'none';
     document.getElementById('quizQuestionArea').innerHTML = '';
     document.getElementById('quizProgressBar').style.width = '0%';
-    lsSet('quiz_saved_session', null);
+    lsSet('quiz_saved_' + (quizState.categoryId || 0), null);
     document.getElementById('quizResumeBanner').style.display = 'none';
 }
 
@@ -2604,6 +2605,7 @@ function resetQuiz() {
 function saveQuizAndExit() {
     if (!quizState.active) return;
     stopQuizTimer();
+    var catId = quizState.categoryId || 0;
     var saveData = {
         questions: quizState.questions,
         currentIndex: quizState.currentIndex,
@@ -2613,11 +2615,13 @@ function saveQuizAndExit() {
         results: quizState.results,
         submitted: quizState.submitted,
         mode: quizState.mode,
-        categoryId: quizState.categoryId,
+        categoryId: catId,
         savedAt: new Date().toISOString()
     };
-    lsSet('quiz_saved_session', saveData);
-    showToast('进度已保存，下次打开刷题页面可继续');
+    var key = 'quiz_saved_' + catId;
+    lsSet(key, saveData);
+    var cat = findCategoryById(catId);
+    showToast((cat ? cat.name : '全部分类') + ' 进度已保存，下次打开可继续');
     quizState.active = false;
     document.getElementById('quizActive').style.display = 'none';
     document.getElementById('quizSetup').style.display = 'block';
@@ -2626,13 +2630,16 @@ function saveQuizAndExit() {
 }
 
 function showResumeBanner() {
-    var saved = lsGet('quiz_saved_session', null);
+    var catId = parseInt(document.getElementById('quizCategory').value) || 0;
+    var key = 'quiz_saved_' + catId;
+    var saved = lsGet(key, null);
     var banner = document.getElementById('quizResumeBanner');
     var info = document.getElementById('quizResumeInfo');
     if (saved && saved.questions && saved.questions.length > 0) {
         var done = Object.keys(saved.submitted).length;
         var total = saved.questions.length;
-        info.textContent = done + '/' + total + ' 题已答，正确 ' + saved.correctCount + ' 题，保存于 ' + (saved.savedAt || '').substring(11, 19);
+        var cat = findCategoryById(catId);
+        info.textContent = (cat ? cat.name : '全部分类') + '：' + done + '/' + total + ' 题已答，正确 ' + saved.correctCount + ' 题，' + (saved.savedAt || '').substring(11, 19);
         banner.style.display = 'block';
     } else {
         banner.style.display = 'none';
@@ -2640,7 +2647,9 @@ function showResumeBanner() {
 }
 
 function resumeQuiz() {
-    var saved = lsGet('quiz_saved_session', null);
+    var catId = parseInt(document.getElementById('quizCategory').value) || 0;
+    var key = 'quiz_saved_' + catId;
+    var saved = lsGet(key, null);
     if (!saved || !saved.questions || saved.questions.length === 0) {
         showToast('没有可恢复的进度', 'warning'); return;
     }
@@ -2662,7 +2671,6 @@ function resumeQuiz() {
     document.getElementById('quizSummary').style.display = 'none';
     renderCurrentQuestion();
     showToast('已恢复刷题进度');
-}
 
 // ── Safe modal opener — always cleans backdrop first ──
 function safeModalShow(modalId) {
@@ -2964,11 +2972,12 @@ function deleteQuizQuestion() {
     delete quizState.results[q.id];
     delete quizState.submitted[q.id];
 
-    // Update saved session if any
-    var saved = lsGet('quiz_saved_session', null);
+    // Update saved session if any (category-specific key)
+    var saveKey = 'quiz_saved_' + (quizState.categoryId || 0);
+    var saved = lsGet(saveKey, null);
     if (saved && saved.questions) {
         saved.questions = saved.questions.filter(function(qi) { return qi.id !== q.id; });
-        lsSet('quiz_saved_session', saved);
+        lsSet(saveKey, saved);
     }
 
     if (quizState.questions.length === 0) {
