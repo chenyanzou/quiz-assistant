@@ -2888,9 +2888,13 @@ async function doQuizAiCheck() {
         if (aiAnalysis) {
             html += '<div style="background:#fff;padding:0.6rem 0.8rem;border-radius:8px;margin-bottom:0.5rem;white-space:pre-wrap">' + aiAnalysis + '</div>';
         }
-        // Save button if AI answer disagrees — use onclick with data from window, no escaping needed
+        // Save button if AI answer disagrees
         if (!match && aiAnswer) {
             html += '<button class="btn btn-sm btn-warning me-1" onclick="saveAiAnswer()">采纳AI答案并保存</button>';
+        }
+        // Always show '采纳AI解析' if AI provided an analysis (even if answers match)
+        if (aiAnalysis && aiAnalysis !== result) {
+            html += '<button class="btn btn-sm btn-outline-info me-1" onclick="saveAiAnalysisOnly()">采纳AI解析</button>';
         }
         html += '<button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'quizAiResult\').style.display=\'none\'">关闭</button>';
         resultDiv.innerHTML = html;
@@ -2935,6 +2939,32 @@ function saveAiAnswer(aiAnswer, aiAnalysis) {
     document.getElementById('quizAiResult').style.display = 'none';
     var typeMsg = (detectedType && detectedType !== q.question_type) ? '，题型已自动更新为' + (TYPE_LABELS[detectedType] || detectedType) : '';
     showToast('已采纳AI答案' + typeMsg + '并保存到题库');
+}
+
+// ── Adopt only AI's analysis, keep original answer ──
+function saveAiAnalysisOnly() {
+    var analysis = window._aiPendingAnalysis;
+    if (!analysis) return;
+    var q = quizState.questions[quizState.currentIndex];
+    if (!q) return;
+
+    // Update localStorage
+    var questions = lsGet('quiz_questions', []);
+    for (var i = 0; i < questions.length; i++) {
+        if (questions[i].id === q.id) {
+            questions[i].analysis = analysis;
+            break;
+        }
+    }
+    lsSet('quiz_questions', questions);
+
+    // Update quizState
+    q.analysis = analysis;
+
+    // Refresh display + close
+    renderCurrentQuestion();
+    document.getElementById('quizAiResult').style.display = 'none';
+    showToast('已采纳AI解析（原答案保持不变）');
 }
 
 // ── Auto-detect question type from AI answer format ──
