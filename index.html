@@ -2843,15 +2843,32 @@ async function doQuizAiCheck() {
         if (aiAnswer && storedAnswer) {
             var a1 = aiAnswer.trim().toUpperCase();
             var a2 = storedAnswer.toUpperCase();
-            // Also check single-letter vs full-text for judge type
+
+            // ── Judge type: normalize Chinese/English boolean answers ──
             if (q.question_type === 'judge') {
-                // Map common Chinese judge answers
                 var normMap = {'正确':'对','错误':'错','是':'对','否':'错','T':'对','F':'错','TRUE':'对','FALSE':'错','YES':'对','NO':'错'};
                 var na1 = (normMap[a1] || a1).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
                 var na2 = (normMap[a2] || a2).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
                 match = (na1 === na2);
-            } else {
-                // Normalize: strip whitespace, uppercase, remove commas between multi-char answers
+            }
+            // ── Multi-choice: extract letters from AI text and compare ──
+            else if (q.question_type === 'multi' || (q.options && q.options.length > 0 && a2.replace(/[,，\s]/g,'').length >= 2)) {
+                // Extract uppercase letters from both sides
+                var a1Letters = a1.replace(/[^A-Za-z]/g,'').toUpperCase();
+                var a2Letters = a2.replace(/[,，\s]/g,'').toUpperCase();
+                // Also try fuzzy: if AI answer contains a substring that matches the answer letters
+                if (a1Letters === a2Letters) { match = true; }
+                else if (a2Letters.length >= 2 && a1.indexOf(a2Letters) !== -1) { match = true; } // answer letters found in AI text
+                else if (a1Letters.length >= 2 && a2.indexOf(a1Letters) !== -1) { match = true; } // AI letters found in answer
+            }
+            // ── Fill/short: compare text, try substring ──
+            else if (q.question_type === 'fill' || q.question_type === 'short') {
+                a1 = a1.replace(/[,，\s]+/g,' ').trim();
+                a2 = a2.replace(/[,，\s]+/g,' ').trim();
+                match = (a1 === a2 || a1.indexOf(a2) !== -1 || a2.indexOf(a1) !== -1);
+            }
+            // ── Single choice: letter match ──
+            else {
                 a1 = a1.replace(/[,，\s]/g,'');
                 a2 = a2.replace(/[,，\s]/g,'');
                 match = (a1 === a2);
@@ -2920,40 +2937,40 @@ function saveAiAnswer(aiAnswer, aiAnalysis) {
     showToast('已采纳AI答案' + typeMsg + '并保存到题库');
 }
 
-// ── Auto-detect question type from answer format ──
+// ── Auto-detect question type from AI answer format ──
 function detectTypeFromAnswer(answer, currentType, options) {
     if (!answer) return null;
     var a = answer.trim();
     var hasOpts = options && options.length > 0;
 
-    // Detect multi-choice: answer is 2+ letters like "AB", "ABC", "A,B", "A,C"
-    var letters = a.toUpperCase().replace(/[,，\s]/g, '').split('').filter(function(c) { return c >= 'A' && c <= 'Z'; });
-    if (letters.length >= 2 && hasOpts) {
-        // Check if the letters are consecutive single-choice options — e.g. "A" through "D" in order
-        // If sorted letters match original and all are single chars, it's multi
-        return 'multi';
-    }
-
-    // Detect single choice: single letter like "A", "B", "C", "D" with options present
-    if (/^[A-Da-d]$/.test(a) && hasOpts && currentType !== 'judge') {
-        return 'single';
-    }
-
-    // Detect judge: answer is "对"/"错"/"正确"/"错误"/"T"/"F" etc
-    var judgeSet = ['对','错','正确','错误','是','否','T','F','True','False','true','false','TRUE','FALSE','YES','NO','Yes','No','yes','no','√','×','✓','✗','A','B'];
+    // ── Judge: check FIRST, since some judge answers are short ──
+    var judgeSet = ['对','错','正确','错误','是','否','T','F','True','False','true','false','TRUE','FALSE','YES','NO','Yes','No','yes','no','√','×','✓','✗'];
     if (judgeSet.indexOf(a) !== -1 || judgeSet.indexOf(a.toUpperCase()) !== -1) {
         return 'judge';
     }
 
-    // Detect fill/short: long text without options
-    if (a.length > 5 && !hasOpts) {
-        return 'fill';
-    }
-    if (a.length > 5) {
-        return 'short';
+    // ── If question has options, only switch among single/multi/judge ──
+    if (hasOpts) {
+        // Single letter in A-D range → single
+        if (/^[A-Da-d]$/.test(a)) return 'single';
+
+        // Multi-letter answer: "AB", "ABC", "A,B", "A, C" etc
+        var letters = a.toUpperCase().replace(/[,，\s]/g, '').split('').filter(function(c) { return c >= 'A' && c <= 'Z'; });
+        if (letters.length >= 2) return 'multi';
+
+        // Long text but question has options → could be a multi-answer described
+        // as text. Keep current type, don't force fill/short.
+        return null;
     }
 
-    return null; // can't determine, keep current type
+    // ── No options: only possible types are judge/fill/short ──
+    if (a.length <= 5) return currentType; // keep whatever it was
+
+    // Long text, no options, current type doesn't match → decide fill vs short
+    if (currentType === 'fill' || currentType === 'short') return null; // already correct
+    return 'short'; // default to short for long text with no options
+
+    return null;
 }
 
 function escapeJs(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n'); }
