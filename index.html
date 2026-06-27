@@ -2877,12 +2877,16 @@ function saveAiAnswer(aiAnswer, aiAnalysis) {
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
 
+    // Auto-detect question type from AI answer format
+    var detectedType = detectTypeFromAnswer(aiAnswer, q.question_type, q.options);
+
     // Update localStorage
     var questions = lsGet('quiz_questions', []);
     for (var i = 0; i < questions.length; i++) {
         if (questions[i].id === q.id) {
             questions[i].answer = aiAnswer;
             questions[i].analysis = aiAnalysis || questions[i].analysis;
+            if (detectedType) questions[i].question_type = detectedType;
             break;
         }
     }
@@ -2891,11 +2895,49 @@ function saveAiAnswer(aiAnswer, aiAnalysis) {
     // Update quizState
     q.answer = aiAnswer;
     if (aiAnalysis) q.analysis = aiAnalysis;
+    if (detectedType) q.question_type = detectedType;
 
     // Refresh current question display
     renderCurrentQuestion();
     document.getElementById('quizAiResult').style.display = 'none';
-    showToast('已采纳AI答案并保存到题库');
+    var typeMsg = (detectedType && detectedType !== q.question_type) ? '，题型已自动更新为' + (TYPE_LABELS[detectedType] || detectedType) : '';
+    showToast('已采纳AI答案' + typeMsg + '并保存到题库');
+}
+
+// ── Auto-detect question type from answer format ──
+function detectTypeFromAnswer(answer, currentType, options) {
+    if (!answer) return null;
+    var a = answer.trim();
+    var hasOpts = options && options.length > 0;
+
+    // Detect multi-choice: answer is 2+ letters like "AB", "ABC", "A,B", "A,C"
+    var letters = a.toUpperCase().replace(/[,，\s]/g, '').split('').filter(function(c) { return c >= 'A' && c <= 'Z'; });
+    if (letters.length >= 2 && hasOpts) {
+        // Check if the letters are consecutive single-choice options — e.g. "A" through "D" in order
+        // If sorted letters match original and all are single chars, it's multi
+        return 'multi';
+    }
+
+    // Detect single choice: single letter like "A", "B", "C", "D" with options present
+    if (/^[A-Da-d]$/.test(a) && hasOpts && currentType !== 'judge') {
+        return 'single';
+    }
+
+    // Detect judge: answer is "对"/"错"/"正确"/"错误"/"T"/"F" etc
+    var judgeSet = ['对','错','正确','错误','是','否','T','F','True','False','true','false','TRUE','FALSE','YES','NO','Yes','No','yes','no','√','×','✓','✗','A','B'];
+    if (judgeSet.indexOf(a) !== -1 || judgeSet.indexOf(a.toUpperCase()) !== -1) {
+        return 'judge';
+    }
+
+    // Detect fill/short: long text without options
+    if (a.length > 5 && !hasOpts) {
+        return 'fill';
+    }
+    if (a.length > 5) {
+        return 'short';
+    }
+
+    return null; // can't determine, keep current type
 }
 
 function escapeJs(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n'); }
