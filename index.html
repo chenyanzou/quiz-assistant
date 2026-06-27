@@ -2856,9 +2856,8 @@ async function doQuizAiCheck() {
         var aiAnalysis = result || '';
         var m = result.match(/【AI答案】\s*(.+?)(?:\n|【|$)/);
         if (m) aiAnswer = m[1].trim();
-        // Clean Chinese prefixes from AI answer before saving/comparing
-        // e.g. "答案是B" → "B", "正确答案为ABC" → "ABC", "选A" → "A"
-        if (aiAnswer && (q.question_type === 'single' || q.question_type === 'multi')) {
+        // Clean Chinese prefixes/noise from AI answer for ALL question types
+        if (aiAnswer) {
             aiAnswer = cleanAiAnswer(aiAnswer, q);
         }
         var m2 = result.match(/【解析】\s*([\s\S]*?)(?=【评价】|$)/);
@@ -2871,12 +2870,17 @@ async function doQuizAiCheck() {
             var a1 = aiAnswer.trim().toUpperCase();
             var a2 = storedAnswer.toUpperCase();
 
-            // ── Judge type: normalize Chinese/English boolean answers ──
+            \ ── Judge type: normalize to core 对/错, already cleaned by cleanAiAnswer ──
             if (q.question_type === 'judge') {
-                var normMap = {'正确':'对','错误':'错','是':'对','否':'错','T':'对','F':'错','TRUE':'对','FALSE':'错','YES':'对','NO':'错'};
-                var na1 = (normMap[a1] || a1).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
-                var na2 = (normMap[a2] || a2).replace(/[对√✓⭕✅☑]/,'对').replace(/[错×✗✘✕❌]/,'错');
-                match = (na1 === na2);
+                // cleanAiAnswer already reduced both sides to 对 or 错
+                match = (a1 === a2);
+                // Fallback: map raw text if not already clean
+                if (!match) {
+                    var normMap = {'正确':'对','错误':'错','是':'对','否':'错','T':'对','F':'错','TRUE':'对','FALSE':'错','YES':'对','NO':'错'};
+                    var na1 = (normMap[a1] || a1).replace(/[对√✓⭕✅☑对正确]/g,'对').replace(/[错×✗✘✕❌错误]/g,'错');
+                    var na2 = (normMap[a2] || a2).replace(/[对√✓⭕✅☑对正确]/g,'对').replace(/[错×✗✘✕❌错误]/g,'错');
+                    match = (na1 === na2);
+                }
             }
             // ── Multi-choice: extract letters from AI text and compare ──
             else if (q.question_type === 'multi' || (q.options && q.options.length > 0 && a2.replace(/[,，\s]/g,'').length >= 2)) {
@@ -2940,6 +2944,9 @@ function saveAiAnswer(aiAnswer, aiAnalysis) {
     if (!aiAnswer) return;
     var q = quizState.questions[quizState.currentIndex];
     if (!q) return;
+
+    // Clean AI answer before saving (strip Chinese noise)
+    aiAnswer = cleanAiAnswer(aiAnswer, q);
 
     // Auto-detect question type from AI answer format
     var detectedType = detectTypeFromAnswer(aiAnswer, q.question_type, q.options);
