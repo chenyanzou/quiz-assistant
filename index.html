@@ -721,6 +721,12 @@ body::after {
                 <div class="col-md-4"><label class="form-label">选择分类</label>
                     <select class="form-select" id="quizCategory" onchange="onQuizModeChange()"><option value="0">全部分类</option></select>
                 </div>
+                <div class="col-md-4" id="quizWrongSubWrap" style="display:none"><label class="form-label">错题范围</label>
+                    <select class="form-select" id="quizWrongSub">
+                        <option value="all">全部错题</option>
+                        <option value="unmastered">未做对的错题</option>
+                    </select>
+                </div>
                 <div class="col-md-4"><label class="form-label">筛选题型</label>
                     <select class="form-select" id="quizQuestionType">
                         <option value="">全部题型</option>
@@ -2140,6 +2146,7 @@ function onQuizModeChange() {
     // Show/hide time input only for exam mode
     document.getElementById('quizTimeWrap').style.display = (mode === 'exam') ? 'block' : 'none';
     document.getElementById('quizCountWrap').style.display = (mode === 'exam') ? 'none' : 'block';
+    document.getElementById('quizWrongSubWrap').style.display = (mode === 'wrong_only') ? 'block' : 'none';
     document.getElementById('examTypeCountsPanel').style.display = (mode === 'exam') ? 'block' : 'none';
     // In exam mode, hide the single-type filter (per-type counts replace it)
     document.getElementById('quizQuestionType').parentElement.style.display = '';
@@ -2282,6 +2289,12 @@ function startQuiz() {
         var wrongs = lsGet('quiz_wrong', []);
         var wrongQids = wrongs.map(function(w) { return w.question_id; });
         questions = questions.filter(function(q) { return wrongQids.indexOf(q.id) !== -1; });
+        // Sub-mode: unmastered = exclude questions that have been answered correctly after being wrong
+        var wrongSub = document.getElementById('quizWrongSub').value;
+        if (wrongSub === 'unmastered') {
+            var mastered = lsGet('wrong_mastered', []);
+            questions = questions.filter(function(q) { return mastered.indexOf(q.id) === -1; });
+        }
     }
 
     if (questions.length === 0) {
@@ -2508,6 +2521,12 @@ function submitQuizAnswer() {
     quizState.submitted[q.id] = true;
 
     var correct = checkAnswerLocal(q, userAnswer);
+
+    // Track mastered wrong questions: if answered correctly in wrong_only mode
+    if (correct && quizState.mode === 'wrong_only') {
+        var mastered = lsGet('wrong_mastered', []);
+        if (mastered.indexOf(q.id) === -1) { mastered.push(q.id); lsSet('wrong_mastered', mastered); }
+    }
 
     if (correct) {
         quizState.correctCount++;
