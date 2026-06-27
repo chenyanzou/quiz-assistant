@@ -3825,14 +3825,24 @@ function autoPopulate() {
 // Initialization
 // ============================================================
 function init() {
-    autoPopulate();
-    document.getElementById('tab-dashboard').classList.add('show', 'active');
-    refreshCategories();
-    loadBgSetting();
-    loadDashboard();
-    loadQuizSetup();
-    loadImportTab();
-    loadAiConfig();
+    // Emergency reset: add ?reset=1 to the URL to wipe all quiz data
+    if (location.search.indexOf('reset=1') !== -1) {
+        localStorage.clear();
+        location.href = location.pathname; // reload without query string
+        return;
+    }
+    try {
+        autoPopulate();
+        document.getElementById('tab-dashboard').classList.add('show', 'active');
+        refreshCategories();
+        loadBgSetting();
+        loadDashboard();
+        loadQuizSetup();
+        loadImportTab();
+        loadAiConfig();
+    } catch(e) {
+        document.body.innerHTML = '<div style=\"padding:3rem;text-align:center\"><h3>页面加载出错</h3><p style=\"color:#DC2626\">' + e.message + '</p><button onclick=\"localStorage.clear();location.reload()\" style=\"padding:0.5rem 1.5rem;margin-top:1rem;cursor:pointer\">清除数据并重新加载</button></div>';
+    }
 }
 
 init();
