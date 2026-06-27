@@ -737,6 +737,12 @@ body::after {
                 <div class="col-md-4" id="quizTimeWrap" style="display:none"><label class="form-label">考试时间（分钟）</label>
                     <input class="form-control" type="number" id="quizTimeLimit" value="30" min="1" max="180" placeholder="分钟">
                 </div>
+                <div class="col-md-4" id="quizWrongSubWrap" style="display:none"><label class="form-label">错题范围</label>
+                    <select class="form-select" id="quizWrongSub">
+                        <option value="all">所有错题</option>
+                        <option value="persistent">依旧错的题</option>
+                    </select>
+                </div>
             </div>
 
         <!-- Per-type count panel -- exam mode only -->
@@ -2141,6 +2147,7 @@ function onQuizModeChange() {
     document.getElementById('quizTimeWrap').style.display = (mode === 'exam') ? 'block' : 'none';
     document.getElementById('quizCountWrap').style.display = (mode === 'exam') ? 'none' : 'block';
     document.getElementById('examTypeCountsPanel').style.display = (mode === 'exam') ? 'block' : 'none';
+    document.getElementById('quizWrongSubWrap').style.display = (mode === 'wrong_only') ? 'block' : 'none';
     // In exam mode, hide the single-type filter (per-type counts replace it)
     document.getElementById('quizQuestionType').parentElement.style.display = '';
     if (mode === 'exam') {
@@ -2277,11 +2284,22 @@ function startQuiz() {
         questions = questions.filter(function(q) { return q.question_type === questionType; });
     }
 
-    // Filter by wrong only
+    // Filter by wrong only (with persistent sub-mode)
     if (mode === 'wrong_only') {
         var wrongs = lsGet('quiz_wrong', []);
-        var wrongQids = wrongs.map(function(w) { return w.question_id; });
-        questions = questions.filter(function(q) { return wrongQids.indexOf(q.id) !== -1; });
+        var wrongSub = document.getElementById('quizWrongSub').value;
+        if (wrongSub === 'persistent') {
+            // "依旧错的题": only questions wrong_count >= 2 (got it wrong again after redo)
+            var persistentQids = {};
+            for (var i = 0; i < wrongs.length; i++) {
+                if (wrongs[i].wrong_count >= 2) persistentQids[wrongs[i].question_id] = true;
+            }
+            questions = questions.filter(function(q) { return persistentQids[q.id]; });
+        } else {
+            // "所有错题": any question in wrong book
+            var wrongQids = wrongs.map(function(w) { return w.question_id; });
+            questions = questions.filter(function(q) { return wrongQids.indexOf(q.id) !== -1; });
+        }
     }
 
     if (questions.length === 0) {
