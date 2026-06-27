@@ -702,12 +702,10 @@ body::after {
 <!-- ================================ -->
 <div class="tab-pane fade" id="tab-quiz">
     <div id="quizSetup">
-        <!-- Resume banner -->
-        <div class="alert alert-info py-2 mb-3" id="quizResumeBanner" style="display:none;background:linear-gradient(135deg,#FEF3C7,#FFF5E6);border-color:rgba(217,119,6,.25);color:var(--amber-dark);border-radius:14px">
-            <div class="d-flex justify-content-between align-items-center">
-                <span>&#128260; 你有未完成的刷题记录：<span id="quizResumeInfo"></span></span>
-                <button class="btn btn-sm btn-primary" onclick="resumeQuiz()" style="font-size:0.8rem">继续答题</button>
-            </div>
+        <!-- Resume panel — shows ALL saved sessions -->
+        <div class="card card-stat p-3 mb-3" id="quizResumePanel" style="display:none;background:linear-gradient(135deg,#FEF3C7,#FFF5E6);border:1px solid rgba(217,119,6,.25);border-radius:14px">
+            <h6 class="fw-bold mb-2" style="color:var(--amber-dark)">&#128260; 已保存的刷题记录</h6>
+            <div id="quizResumeList"></div>
         </div>
         <div class="quiz-card fade-in">
             <h5 class="section-title">刷题设置</h5>
@@ -2598,7 +2596,7 @@ function resetQuiz() {
     document.getElementById('quizQuestionArea').innerHTML = '';
     document.getElementById('quizProgressBar').style.width = '0%';
     lsSet('quiz_saved_' + (quizState.categoryId || 0), null);
-    document.getElementById('quizResumeBanner').style.display = 'none';
+    document.getElementById('quizResumePanel').style.display = 'none';
 }
 
 // ── Save & Exit ──
@@ -2630,47 +2628,57 @@ function saveQuizAndExit() {
 }
 
 function showResumeBanner() {
-    var catId = parseInt(document.getElementById('quizCategory').value) || 0;
-    var key = 'quiz_saved_' + catId;
-    var saved = lsGet(key, null);
-    var banner = document.getElementById('quizResumeBanner');
-    var info = document.getElementById('quizResumeInfo');
-    if (saved && saved.questions && saved.questions.length > 0) {
-        var done = Object.keys(saved.submitted).length;
-        var total = saved.questions.length;
-        var cat = findCategoryById(catId);
-        info.textContent = (cat ? cat.name : '全部分类') + '：' + done + '/' + total + ' 题已答，正确 ' + saved.correctCount + ' 题，' + (saved.savedAt || '').substring(11, 19);
-        banner.style.display = 'block';
-    } else {
-        banner.style.display = 'none';
+    refreshCategories();
+    var panel = document.getElementById('quizResumePanel');
+    var list = document.getElementById('quizResumeList');
+    // Scan ALL quiz_saved_* keys in localStorage
+    var sessions = [];
+    for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k.indexOf('quiz_saved_') === 0) {
+            var data = lsGet(k, null);
+            if (data && data.questions && data.questions.length > 0) {
+                var cid = parseInt(k.replace('quiz_saved_', '')) || 0;
+                var cat = findCategoryById(cid);
+                var done = Object.keys(data.submitted || {}).length;
+                sessions.push({key:k, catName:cat?cat.name:'全部分类', done:done, total:data.questions.length,
+                    correct:data.correctCount||0, mode:data.mode||'sequential',
+                    savedAt:(data.savedAt||'').substring(11,19), catId:cid});
+            }
+        }
     }
+    if (sessions.length === 0) { panel.style.display = 'none'; return; }
+    var modeCN = {sequential:'顺序', random:'随机', exam:'考试', wrong_only:'错题重做'};
+    var html = '';
+    for (var i = 0; i < sessions.length; i++) {
+        var s = sessions[i];
+        var pct = Math.round(s.done / s.total * 100);
+        html += '<div class="d-flex justify-content-between align-items-center py-2' + (i<sessions.length-1?' border-bottom':'') + '" style="border-color:rgba(217,119,6,.15)">' +
+            '<div><span class="fw-bold" style="color:var(--amber-dark)">' + s.catName + '</span>' +
+            '<span class="text-muted small ms-2">' + (modeCN[s.mode]||s.mode) + ' · ' + s.done + '/' + s.total + '题 · ' + s.savedAt + '</span>' +
+            '<div class="progress mt-1" style="height:4px;width:200px"><div class="progress-bar" style="width:' + pct + '%"></div></div></div>' +
+            '<button class="btn btn-sm btn-primary" onclick="resumeSavedQuiz(\'' + s.key + '\',' + s.catId + ')" style="font-size:0.75rem;white-space:nowrap">继续</button>' +
+            '</div>';
+    }
+    list.innerHTML = html;
+    panel.style.display = 'block';
 }
 
-function resumeQuiz() {
-    var catId = parseInt(document.getElementById('quizCategory').value) || 0;
-    var key = 'quiz_saved_' + catId;
+function resumeSavedQuiz(key, catId) {
     var saved = lsGet(key, null);
-    if (!saved || !saved.questions || saved.questions.length === 0) {
-        showToast('没有可恢复的进度', 'warning'); return;
-    }
-    quizState = {
-        questions: saved.questions,
-        currentIndex: saved.currentIndex,
-        correctCount: saved.correctCount,
-        wrongCount: saved.wrongCount,
-        answers: saved.answers || {},
-        results: saved.results || {},
-        submitted: saved.submitted || {},
-        mode: saved.mode || 'sequential',
-        categoryId: saved.categoryId || 0,
-        active: true
-    };
+    if (!saved || !saved.questions || saved.questions.length === 0) { showToast('无进度', 'warning'); return; }
+    document.getElementById('quizCategory').value = catId;
+    document.getElementById('quizMode').value = saved.mode || 'sequential';
+    quizState = {questions:saved.questions, currentIndex:saved.currentIndex, correctCount:saved.correctCount,
+        wrongCount:saved.wrongCount, answers:saved.answers||{}, results:saved.results||{},
+        submitted:saved.submitted||{}, mode:saved.mode||'sequential', categoryId:saved.categoryId||0, active:true};
     document.getElementById('quizSetup').style.display = 'none';
     document.getElementById('quizActive').style.display = 'block';
-    document.getElementById('quizResumeBanner').style.display = 'none';
+    document.getElementById('quizResumePanel').style.display = 'none';
     document.getElementById('quizSummary').style.display = 'none';
     renderCurrentQuestion();
     showToast('已恢复刷题进度');
+}
 
 // ── Safe modal opener — always cleans backdrop first ──
 function safeModalShow(modalId) {
