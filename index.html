@@ -2856,6 +2856,11 @@ async function doQuizAiCheck() {
         var aiAnalysis = result || '';
         var m = result.match(/【AI答案】\s*(.+?)(?:\n|【|$)/);
         if (m) aiAnswer = m[1].trim();
+        // Clean Chinese prefixes from AI answer before saving/comparing
+        // e.g. "答案是B" → "B", "正确答案为ABC" → "ABC", "选A" → "A"
+        if (aiAnswer && (q.question_type === 'single' || q.question_type === 'multi')) {
+            aiAnswer = cleanAiAnswer(aiAnswer, q);
+        }
         var m2 = result.match(/【解析】\s*([\s\S]*?)(?=【评价】|$)/);
         if (m2) aiAnalysis = m2[1].trim();
 
@@ -3023,6 +3028,57 @@ function detectTypeFromAnswer(answer, currentType, options) {
     return 'short'; // default to short for long text with no options
 
     return null;
+}
+
+// ── Strip Chinese noise from AI answer, extract pure answer ──
+function cleanAiAnswer(raw, question) {
+    var a = raw.trim();
+    var type = question.question_type || 'single';
+    var opts = question.options || [];
+
+    if (type === 'single' || type === 'multi') {
+        // Option 1: extract uppercase letters A-Z from the raw text
+        var letters = a.toUpperCase().replace(/[^A-Z]/g, '');
+        if (letters.length >= 1) return letters;
+        // Option 2: match against actual option text
+        if (opts.length > 0) {
+            for (var i = 0; i < opts.length; i++) {
+                if (a.indexOf(opts[i]) !== -1) {
+                    var ch = String.fromCharCode(65 + i);
+                    if (type === 'multi') {
+                        // Check all options for multi
+                        var result = '';
+                        for (var j = 0; j < opts.length; j++) {
+                            if (a.indexOf(opts[j]) !== -1) result += String.fromCharCode(65 + j);
+                        }
+                        if (result.length >= 1) return result;
+                    }
+                    return ch;
+                }
+            }
+        }
+        // Option 3: try to find numbers like "1" "2" mapped to A B C D
+        var numMatch = a.match(/\d+/);
+        if (numMatch) {
+            var n = parseInt(numMatch[0]);
+            if (n >= 1 && n <= opts.length) return String.fromCharCode(64 + n);
+        }
+        return a; // fallback: return cleaned text
+    }
+
+    if (type === 'judge') {
+        // Map any judge-like answer to 对 or 错
+        var j = a.replace(/[答案是为对正确√✓⭕✅☑正确对是TRUEYES]/g,'对').replace(/[错不正确否×✗✘✕❌错误FALSENO]/g,'错');
+        var dCount = (j.match(/对/g) || []).length;
+        var cCount = (j.match(/错/g) || []).length;
+        if (dCount > cCount) return '对';
+        if (cCount > dCount) return '错';
+        return a;
+    }
+
+    // Fill/short: strip common prefixes and return the rest
+    a = a.replace(/^(答案是|答案为|正确答案是|正确答案为|参考答案[\s:：]*)/, '').trim();
+    return a;
 }
 
 function escapeJs(s) { return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,'\\n'); }
