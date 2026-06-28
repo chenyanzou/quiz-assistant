@@ -722,7 +722,7 @@ body::after {
                 <div class="col-4"><label class="form-label small fw-semibold">选择分类</label>
                     <select class="form-select form-select-sm" id="quizCategory" onchange="onQuizModeChange()"><option value="0">全部分类</option></select>
                 </div>
-                <div class="col-4"><label class="form-label small fw-semibold">筛选题型</label>
+                <div class="col-4" id="quizTypeFilterCol"><label class="form-label small fw-semibold">筛选题型</label>
                     <select class="form-select form-select-sm" id="quizQuestionType" onchange="onQuizModeChange()">
                         <option value="">全部题型</option>
                         <option value="single">单选题</option>
@@ -734,50 +734,29 @@ body::after {
                 </div>
             </div>
 
-            <!-- ── 顺序刷题 panel ── -->
-            <div class="mode-panel card card-stat p-3 mb-2" id="seqModePanel" style="background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
-                <div class="row g-2 align-items-end">
-                    <div class="col-6"><label class="form-label small fw-semibold">题目数量 <small class="text-muted fw-normal" id="quizAvailHint">(可用 -- 题)</small></label><input class="form-control form-control-sm" type="number" id="quizCount" value="10" min="1" max="200" onchange="clampQuizCount()"></div>
-                    <div class="col-6 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100" onclick="startQuiz()" style="padding:0.45rem">开始顺序刷题</button></div>
+            <!-- ── 通用：各题型数量设置（所有模式共用） ── -->
+            <div class="card card-stat p-3 mb-2" style="background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
+                <h6 class="fw-bold mb-2" style="color:var(--amber-dark);font-size:0.9rem">各题型数量 <small class="text-muted fw-normal" id="typeTotalInfo">总计 0 题</small></h6>
+                <div class="row g-2 mb-2">
+                    <div class="col"><label class="form-label small fw-semibold">单选 <span class="text-muted" id="availSingle" style="font-size:0.72rem">(共0题)</span></label><input type="number" class="form-control form-control-sm type-count" id="typeSingleCount" value="10" min="0" max="100" onchange="updateTypeTotal()"></div>
+                    <div class="col"><label class="form-label small fw-semibold">多选 <span class="text-muted" id="availMulti"  style="font-size:0.72rem">(共0题)</span></label><input type="number" class="form-control form-control-sm type-count" id="typeMultiCount"  value="5"  min="0" max="100" onchange="updateTypeTotal()"></div>
+                    <div class="col"><label class="form-label small fw-semibold">判断 <span class="text-muted" id="availJudge" style="font-size:0.72rem">(共0题)</span></label><input type="number" class="form-control form-control-sm type-count" id="typeJudgeCount" value="5"  min="0" max="100" onchange="updateTypeTotal()"></div>
+                    <div class="col"><label class="form-label small fw-semibold">填空 <span class="text-muted" id="availFill"  style="font-size:0.72rem">(共0题)</span></label><input type="number" class="form-control form-control-sm type-count" id="typeFillCount"  value="3"  min="0" max="100" onchange="updateTypeTotal()"></div>
+                    <div class="col"><label class="form-label small fw-semibold">简答 <span class="text-muted" id="availShort" style="font-size:0.72rem">(共0题)</span></label><input type="number" class="form-control form-control-sm type-count" id="typeShortCount" value="2"  min="0" max="100" onchange="updateTypeTotal()"></div>
                 </div>
-            </div>
-
-            <!-- ── 随机刷题 panel ── -->
-            <div class="mode-panel card card-stat p-3 mb-2" id="rndModePanel" style="display:none;background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
-                <div class="row g-2 align-items-end">
-                    <div class="col-6"><label class="form-label small fw-semibold">题目数量 <small class="text-muted fw-normal" id="quizAvailHint2">(可用 -- 题)</small></label><input class="form-control form-control-sm" type="number" id="quizCount2" value="10" min="1" max="200"></div>
-                    <div class="col-6 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100" onclick="startQuiz()" style="padding:0.45rem">开始随机刷题</button></div>
-                </div>
-            </div>
-
-            <!-- ── 模拟考试 panel ── -->
-            <div class="mode-panel card card-stat p-3 mb-2" id="examModePanel" style="display:none;background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
-                <div class="row g-2 align-items-end mb-2">
+                <!-- Mode-specific extras -->
+                <div id="examExtra" style="display:none" class="row g-2 align-items-end mb-2">
                     <div class="col-6"><label class="form-label small fw-semibold">考试时间 <small class="text-muted fw-normal">(分钟)</small></label><input class="form-control form-control-sm" type="number" id="quizTimeLimit" value="30" min="1" max="180"></div>
-                    <div class="col-6 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100" onclick="startQuiz()" style="padding:0.45rem">开始模拟考试</button></div>
                 </div>
-                <h6 class="fw-bold mt-2 mb-2" style="color:var(--amber-dark);font-size:0.9rem">各题型数量 <small class="text-muted fw-normal" id="examTotalInfo">总计 0 题</small></h6>
-                <div class="row g-2">
-                    <div class="col"><label class="form-label small fw-semibold">单选 <span class="text-muted exam-avail" id="examAvailSingle">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examSingleCount" value="10" min="0" max="100" onchange="updateExamTotal()"></div>
-                    <div class="col"><label class="form-label small fw-semibold">多选 <span class="text-muted exam-avail" id="examAvailMulti">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examMultiCount"  value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
-                    <div class="col"><label class="form-label small fw-semibold">判断 <span class="text-muted exam-avail" id="examAvailJudge">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examJudgeCount" value="5"  min="0" max="100" onchange="updateExamTotal()"></div>
-                    <div class="col"><label class="form-label small fw-semibold">填空 <span class="text-muted exam-avail" id="examAvailFill">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examFillCount"  value="3"  min="0" max="100" onchange="updateExamTotal()"></div>
-                    <div class="col"><label class="form-label small fw-semibold">简答 <span class="text-muted exam-avail" id="examAvailShort">(共0题)</span></label><input type="number" class="form-control form-control-sm exam-type-count" id="examShortCount" value="2"  min="0" max="100" onchange="updateExamTotal()"></div>
-                </div>
-            </div>
-
-            <!-- ── 错题重做 panel ── -->
-            <div class="mode-panel card card-stat p-3 mb-2" id="wrongModePanel" style="display:none;background:var(--amber-light);border:1px solid rgba(217,119,6,.18)">
-                <div class="row g-2 align-items-end">
-                    <div class="col-4"><label class="form-label small fw-semibold">错题范围</label>
+                <div id="wrongExtra" style="display:none" class="row g-2 align-items-end mb-2">
+                    <div class="col-6"><label class="form-label small fw-semibold">错题范围</label>
                         <select class="form-select form-select-sm" id="quizWrongSub">
                             <option value="all">所有错题</option>
-                            <option value="persistent">依旧错的题</option>
+                            <option value="unmastered">未做对的错题</option>
                         </select>
                     </div>
-                    <div class="col-4"><label class="form-label small fw-semibold">题目数量 <small class="text-muted fw-normal" id="quizAvailHint3">(可用 -- 题)</small></label><input class="form-control form-control-sm" type="number" id="quizCount3" value="10" min="1" max="200"></div>
-                    <div class="col-4 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100" onclick="startQuiz()" style="padding:0.45rem">开始错题重做</button></div>
                 </div>
+                <button class="btn btn-sm btn-primary w-100" id="startBtn" onclick="startQuiz()" style="padding:0.45rem">开始刷题</button>
             </div>
         </div>
     </div>
@@ -2149,82 +2128,77 @@ function loadQuizSetup() {
 
 var quizTimerInterval = null;
 
-function updateExamTotal() {
+function updateTypeTotal() {
     var sum = 0;
-    document.querySelectorAll('.exam-type-count').forEach(function(el) { sum += parseInt(el.value) || 0; });
-    document.getElementById('examTotalInfo').textContent = '总计 ' + sum + ' 题';
+    document.querySelectorAll('.type-count').forEach(function(el) { sum += parseInt(el.value) || 0; });
+    document.getElementById('typeTotalInfo').textContent = '总计 ' + sum + ' 题';
 }
 
-function clampQuizCount() {
-    var max = parseInt(document.getElementById('quizCount').max) || 200;
-    var val = parseInt(document.getElementById('quizCount').value) || 10;
-    if (val > max) document.getElementById('quizCount').value = max;
-    if (val <= 0)  document.getElementById('quizCount').value = 1;
+function getTypeCountInputs() {
+    return {
+        single: {el:document.getElementById('typeSingleCount'), availId:'availSingle'},
+        multi:  {el:document.getElementById('typeMultiCount'),  availId:'availMulti'},
+        judge:  {el:document.getElementById('typeJudgeCount'),  availId:'availJudge'},
+        fill:   {el:document.getElementById('typeFillCount'),   availId:'availFill'},
+        short:  {el:document.getElementById('typeShortCount'),  availId:'availShort'}
+    };
 }
 
-function updateQuizAvailHint(filteredCount) {
-    var el = document.getElementById('quizAvailHint');
-    if (el) el.textContent = '(可用 ' + filteredCount + ' 题)';
+function refreshTypeAvail() {
+    // Count questions by type from the current category filter
+    var questions = lsGet('quiz_questions', []);
+    var catId = parseInt(document.getElementById('quizCategory').value) || 0;
+    if (catId !== 0) questions = questions.filter(function(q) { return q.category_id === catId; });
+    var counts = {single:0,multi:0,judge:0,fill:0,short:0};
+    for (var i=0;i<questions.length;i++) { var t=questions[i].question_type||'single'; if(counts[t]!==undefined) counts[t]++; }
+
+    var mode = document.getElementById('quizMode').value;
+    if (mode === 'wrong_only') {
+        var w = lsGet('quiz_wrong', []);
+        var wids = {};
+        for (var i=0;i<w.length;i++) wids[w[i].question_id]=true;
+        // Re-count only wrong questions
+        counts = {single:0,multi:0,judge:0,fill:0,short:0};
+        for (var i=0;i<questions.length;i++) {
+            var q = questions[i];
+            if (wids[q.id]) { var t2=q.question_type||'single'; if(counts[t2]!==undefined) counts[t2]++; }
+        }
+        // Further filter by unmastered
+        if (document.getElementById('quizWrongSub').value === 'unmastered') {
+            var mastered = lsGet('wrong_mastered', []);
+            var mset = {};
+            for (var i=0;i<mastered.length;i++) mset[mastered[i]]=true;
+            counts = {single:0,multi:0,judge:0,fill:0,short:0};
+            for (var i=0;i<questions.length;i++) {
+                var q2=questions[i];
+                if (wids[q2.id] && !mset[q2.id]) { var t3=q2.question_type||'single'; if(counts[t3]!==undefined) counts[t3]++; }
+            }
+        }
+    }
+
+    var inputs = getTypeCountInputs();
+    for (var k in inputs) {
+        var info = inputs[k];
+        info.el.max = Math.max(1, counts[k]);
+        var v = parseInt(info.el.value) || 0;
+        if (v > counts[k] && counts[k] > 0) info.el.value = counts[k];
+        document.getElementById(info.availId).textContent = '(共' + counts[k] + '题)';
+    }
+    updateTypeTotal();
 }
 
 function onQuizModeChange() {
     var mode = document.getElementById('quizMode').value;
-    // Show/hide mode-specific panels
-    document.getElementById('seqModePanel').style.display   = (mode === 'sequential')  ? 'block' : 'none';
-    document.getElementById('rndModePanel').style.display   = (mode === 'random')      ? 'block' : 'none';
-    document.getElementById('examModePanel').style.display  = (mode === 'exam')        ? 'block' : 'none';
-    document.getElementById('wrongModePanel').style.display = (mode === 'wrong_only')  ? 'block' : 'none';
-    // Hide single-type filter in exam mode (per-type counts replace it)
-    document.getElementById('quizQuestionType').parentElement.style.display = (mode === 'exam') ? 'none' : 'block';
+    // Show/hide mode extras
+    document.getElementById('examExtra').style.display = (mode === 'exam') ? 'flex' : 'none';
+    document.getElementById('wrongExtra').style.display = (mode === 'wrong_only') ? 'flex' : 'none';
+    // Hide single-type filter since per-type counts replace it
+    document.getElementById('quizTypeFilterCol').style.display = 'none';
+    // Update button text
+    var btnLabels = {sequential:'开始顺序刷题', random:'开始随机刷题', exam:'开始模拟考试', wrong_only:'开始错题重做'};
+    document.getElementById('startBtn').textContent = btnLabels[mode] || '开始刷题';
 
-    // Compute filtered count for all non-exam modes
-    var allQ = lsGet('quiz_questions', []);
-    var availCatId = parseInt(document.getElementById('quizCategory').value) || 0;
-    var availType  = document.getElementById('quizQuestionType').value;
-    if (availCatId !== 0) allQ = allQ.filter(function(q) { return q.category_id === availCatId; });
-    if (availType && mode !== 'exam') allQ = allQ.filter(function(q) { return q.question_type === availType; });
-    if (mode === 'wrong_only') {
-        var w = lsGet('quiz_wrong', []);
-        var wids = w.map(function(x){return x.question_id;});
-        allQ = allQ.filter(function(q){return wids.indexOf(q.id)!==-1;});
-    }
-    var avail = allQ.length;
-
-    // Update count inputs across all panels
-    [document.getElementById('quizCount'),document.getElementById('quizCount2'),document.getElementById('quizCount3')].forEach(function(el) {
-        el.max = Math.max(1, avail);
-        var v = parseInt(el.value) || 10;
-        if (v > avail && avail > 0) el.value = avail;
-    });
-    // Update all hint labels
-    ['quizAvailHint','quizAvailHint2','quizAvailHint3'].forEach(function(id) {
-        var h = document.getElementById(id);
-        if (h) h.textContent = '(可用 ' + avail + ' 题)';
-    });
-
-    if (mode === 'exam') {
-        var questions = lsGet('quiz_questions', []);
-        var catId = parseInt(document.getElementById('quizCategory').value) || 0;
-        if (catId !== 0) questions = questions.filter(function(q) { return q.category_id === catId; });
-        var counts = {single:0,multi:0,judge:0,fill:0,short:0};
-        for (var i=0;i<questions.length;i++) { var t=questions[i].question_type||'single'; if(counts[t]!==undefined) counts[t]++; }
-        document.getElementById('examSingleCount').max = counts.single;
-        document.getElementById('examMultiCount').max  = counts.multi;
-        document.getElementById('examJudgeCount').max  = counts.judge;
-        document.getElementById('examFillCount').max   = counts.fill;
-        document.getElementById('examShortCount').max  = counts.short;
-        document.getElementById('examSingleCount').value = Math.min(10, counts.single);
-        document.getElementById('examMultiCount').value  = Math.min(5,  counts.multi);
-        document.getElementById('examJudgeCount').value  = Math.min(5,  counts.judge);
-        document.getElementById('examFillCount').value   = Math.min(3,  counts.fill);
-        document.getElementById('examShortCount').value  = Math.min(2,  counts.short);
-        document.getElementById('examAvailSingle').textContent = '(共' + counts.single + '题)';
-        document.getElementById('examAvailMulti').textContent  = '(共' + counts.multi + '题)';
-        document.getElementById('examAvailJudge').textContent  = '(共' + counts.judge + '题)';
-        document.getElementById('examAvailFill').textContent   = '(共' + counts.fill + '题)';
-        document.getElementById('examAvailShort').textContent  = '(共' + counts.short + '题)';
-        updateExamTotal();
-    }
+    refreshTypeAvail();
     showResumeBanner();
 }
 
@@ -2315,8 +2289,6 @@ function addToWrongBook(question, userAnswer) {
 function startQuiz() {
     var mode = document.getElementById('quizMode').value;
     var categoryId = parseInt(document.getElementById('quizCategory').value) || 0;
-    var questionType = document.getElementById('quizQuestionType').value;
-    var count = parseInt(document.getElementById('quizCount').value) || 10;
     var timeLimit = (mode === 'exam') ? (parseInt(document.getElementById('quizTimeLimit').value) || 0) : 0;
 
     document.getElementById('quizSetup').style.display = 'none';
@@ -2324,73 +2296,70 @@ function startQuiz() {
     document.getElementById('quizQuestionArea').innerHTML =
         '<div class="loading-overlay"><div class="spinner-border text-primary"></div><span class="ms-2">正在加载题目...</span></div>';
 
-    var questions = lsGet('quiz_questions', []);
+    var allQuestions = lsGet('quiz_questions', []);
 
     // Filter by category
     if (categoryId !== 0) {
-        questions = questions.filter(function(q) { return q.category_id === categoryId; });
+        allQuestions = allQuestions.filter(function(q) { return q.category_id === categoryId; });
     }
 
-    // Filter by question type (skip for exam mode — exam uses per-type counts)
-    if (mode !== 'exam' && questionType) {
-        questions = questions.filter(function(q) { return q.question_type === questionType; });
+    // ── ALL modes use per-type count picking ──
+    var typeCounts = {
+        single: parseInt(document.getElementById('typeSingleCount').value) || 0,
+        multi:  parseInt(document.getElementById('typeMultiCount').value)  || 0,
+        judge:  parseInt(document.getElementById('typeJudgeCount').value)  || 0,
+        fill:   parseInt(document.getElementById('typeFillCount').value)   || 0,
+        short:  parseInt(document.getElementById('typeShortCount').value)  || 0
+    };
+
+    // Build per-type pools
+    var pools = {single:[],multi:[],judge:[],fill:[],short:[]};
+    for (var i = 0; i < allQuestions.length; i++) {
+        var q = allQuestions[i];
+        var qt = q.question_type || 'single';
+        if (pools[qt]) pools[qt].push(q);
     }
 
-    // Filter by wrong only (with persistent sub-mode)
+    // Wrong-only mode: filter each pool to only wrong questions
     if (mode === 'wrong_only') {
         var wrongs = lsGet('quiz_wrong', []);
+        var wrongQids = wrongs.map(function(w) { return w.question_id; });
         var wrongSub = document.getElementById('quizWrongSub').value;
-        if (wrongSub === 'persistent') {
-            // "依旧错的题": only questions wrong_count >= 2 (got it wrong again after redo)
-            var persistentQids = {};
-            for (var i = 0; i < wrongs.length; i++) {
-                if (wrongs[i].wrong_count >= 2) persistentQids[wrongs[i].question_id] = true;
+        if (wrongSub === 'unmastered') {
+            var mastered = lsGet('wrong_mastered', []);
+            var masteredSet = {};
+            for (var i=0;i<mastered.length;i++) masteredSet[mastered[i]]=true;
+            for (var tk in pools) {
+                pools[tk] = pools[tk].filter(function(q) { return wrongQids.indexOf(q.id)!==-1 && !masteredSet[q.id]; });
             }
-            questions = questions.filter(function(q) { return persistentQids[q.id]; });
         } else {
-            // "所有错题": any question in wrong book
-            var wrongQids = wrongs.map(function(w) { return w.question_id; });
-            questions = questions.filter(function(q) { return wrongQids.indexOf(q.id) !== -1; });
+            for (var tk in pools) {
+                pools[tk] = pools[tk].filter(function(q) { return wrongQids.indexOf(q.id)!==-1; });
+            }
         }
     }
 
-    if (questions.length === 0) {
-        showToast('没有可用的题目', 'warning');
+    // Pick N from each type pool
+    var picked = [];
+    for (var tk in typeCounts) {
+        if (typeCounts[tk] <= 0) continue;
+        var pool = shuffleArray(pools[tk].slice()); // shuffle a copy
+        var take = Math.min(typeCounts[tk], pool.length);
+        for (var p=0;p<take;p++) picked.push(pool[p]);
+    }
+
+    if (picked.length === 0) {
+        showToast('没有可用的题目（请检查各题型数量设置）', 'warning');
         resetQuiz();
         return;
     }
 
-    // Exam mode: pick N of each type individually
-    if (mode === 'exam') {
-        var typeCounts = {
-            single: parseInt(document.getElementById('examSingleCount').value) || 0,
-            multi:  parseInt(document.getElementById('examMultiCount').value)  || 0,
-            judge:  parseInt(document.getElementById('examJudgeCount').value)  || 0,
-            fill:   parseInt(document.getElementById('examFillCount').value)   || 0,
-            short:  parseInt(document.getElementById('examShortCount').value)  || 0
-        };
-        var picked = [];
-        for (var tk in typeCounts) {
-            if (typeCounts[tk] <= 0) continue;
-            var pool = questions.filter(function(q) { return (q.question_type||'single') === tk; });
-            pool = shuffleArray(pool);
-            var take = Math.min(typeCounts[tk], pool.length);
-            for (var p=0;p<take;p++) picked.push(pool[p]);
-        }
-        questions = shuffleArray(picked);
-    } else {
-        // Normal mode: use single-type filter
-        // Note: filtering already done above (by category + single type)
-        if (mode === 'random') {
-            questions = shuffleArray(questions);
-        }
-        // Respect user‑set count (already clamped to available)
-        if (count > 0 && count < questions.length) {
-            questions = questions.slice(0, count);
-        } else if (questions.length > 0 && count > questions.length) {
-            // User asked for more than available: give all, inform
-        }
+    // Exam + random: shuffle the combined set; sequential: keep per-type order
+    if (mode === 'exam' || mode === 'random') {
+        picked = shuffleArray(picked);
     }
+
+    var questions = picked;
 
     quizState = {
         questions: questions,
